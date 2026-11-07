@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>นโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA) — โปรแกรมเคลมต่างด้าว FWF พังงา</title>
+  <style>
+    :root {
+      --primary:  #1a6b3a;
+      --primary2: #27ae60;
+      --accent:   #009688;
+      --bg:       #f4f6f9;
+      --card:     #ffffff;
+      --border:   #d9e8df;
+      --text:     #2c3e50;
+      --muted:    #6c757d;
+      --danger:   #c0392b;
+      --warning:  #e67e22;
+      --info:     #2980b9;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', 'Prompt', 'Segoe UI', sans-serif;
+      font-size: 15px;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a3a6b, #2980b9);
+      color: #fff;
+      padding: 36px 48px 28px;
+      position: relative;
+    }
+    header h1 { font-size: 2rem; font-weight: 700; }
+    header p  { font-size: 1.05rem; opacity: .88; margin-top: 8px; }
+    header .version {
+      position: absolute; top: 20px; right: 40px;
+      background: rgba(255,255,255,.18);
+      border-radius: 20px; padding: 4px 16px;
+      font-size: .85rem;
+    }
+
+    /* ── Layout ── */
+    .container { display: flex; max-width: 1200px; margin: 0 auto; padding: 32px 20px; gap: 32px; }
+
+    /* ── Sidebar TOC ── */
+    nav.toc {
+      width: 260px; flex-shrink: 0;
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      padding: 20px 0;
+      align-self: flex-start;
+      position: sticky; top: 24px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+    nav.toc h2 { font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 0 20px 10px; }
+    nav.toc ul { list-style: none; }
+    nav.toc ul li a {
+      display: block; padding: 7px 20px;
+      font-size: .92rem; color: var(--text);
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    nav.toc ul li a:hover,
+    nav.toc ul li a.active {
+      background: #e8f0fb;
+      border-left-color: #2980b9;
+      color: #1a3a6b;
+      text-decoration: none;
+    }
+
+    /* ── Main content ── */
+    main { flex: 1; min-width: 0; }
+
+    section {
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      padding: 32px 36px;
+      margin-bottom: 28px;
+    }
+    section h2 {
+      font-size: 1.25rem; font-weight: 700;
+      color: #1a3a6b;
+      border-bottom: 2px solid #d6e4f7;
+      padding-bottom: 10px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    section h3 { font-size: 1.05rem; font-weight: 700; margin: 22px 0 10px; color: #2c3e50; }
+    section p  { margin-bottom: 12px; }
+    section ul, section ol { margin: 10px 0 14px 22px; }
+    section li { margin-bottom: 6px; }
+
+    .icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+      background: #2980b9; color: #fff;
+    }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-left: 4px solid;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px; margin: 16px 0;
+      font-size: .93rem;
+    }
+    .callout-info    { border-color: var(--info);    background: #ebf5fb; }
+    .callout-warning { border-color: var(--warning); background: #fef9e7; }
+    .callout-danger  { border-color: var(--danger);  background: #fdedec; }
+    .callout-success { border-color: var(--primary2);background: #eafaf1; }
+    .callout strong  { display: block; margin-bottom: 4px; }
+
+    /* ── Rights cards ── */
+    .rights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px; margin-top: 14px;
+    }
+    .right-card {
+      border: 1px solid #d6e4f7;
+      border-radius: 10px;
+      padding: 16px 18px;
+      transition: box-shadow .2s;
+      background: #f7fbff;
+    }
+    .right-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+    .right-card .rc-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .right-card h4 { font-size: .95rem; font-weight: 700; color: #1a3a6b; margin-bottom: 4px; }
+    .right-card p  { font-size: .85rem; color: var(--muted); margin: 0; }
+
+    /* ── Data category table ── */
+    table.pdpa-table {
+      width: 100%; border-collapse: collapse;
+      font-size: .92rem; margin: 14px 0;
+    }
+    table.pdpa-table th {
+      background: #1a3a6b; color: #fff;
+      padding: 9px 12px; text-align: left;
+    }
+    table.pdpa-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #d6e4f7;
+      vertical-align: top;
+    }
+    table.pdpa-table tr:nth-child(even) td { background: #f7fbff; }
+    table.pdpa-table tr:hover td { background: #ebf5fb; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block; padding: 2px 10px;
+      border-radius: 12px; font-size: .78rem; font-weight: 600;
+    }
+    .badge-blue   { background: #d6eaf8; color: #1a3a6b; }
+    .badge-green  { background: #d4efdf; color: #1a6b3a; }
+    .badge-red    { background: #fad7d7; color: #c0392b; }
+    .badge-orange { background: #fdebd0; color: #e67e22; }
+
+    /* ── Legal basis tag ── */
+    .basis-tag {
+      display: inline-block; padding: 1px 8px;
+      border-radius: 4px; font-size: .78rem;
+      background: #e8f0fb; color: #1a3a6b;
+      margin: 2px 2px 2px 0;
+    }
+
+    /* ── Consent banner ── */
+    #consent-banner {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #1a2a3a;
+      color: #e0e0e0;
+      padding: 16px 24px;
+      display: flex; align-items: center; gap: 20px;
+      flex-wrap: wrap;
+      z-index: 9999;
+      box-shadow: 0 -4px 20px rgba(0,0,0,.3);
+      font-size: .93rem;
+    }
+    #consent-banner p { margin: 0; flex: 1; min-width: 200px; }
+    #consent-banner a { color: #64b5f6; }
+    .btn-accept {
+      background: #27ae60; color: #fff;
+      border: none; border-radius: 6px;
+      padding: 9px 22px; font-size: .95rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-accept:hover { background: #1e8449; }
+    .btn-decline {
+      background: transparent; color: #aaa;
+      border: 1px solid #555; border-radius: 6px;
+      padding: 9px 18px; font-size: .95rem;
+      cursor: pointer; white-space: nowrap;
+      transition: all .15s;
+    }
+    .btn-decline:hover { border-color: #aaa; color: #ddd; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 24px;
+      color: var(--muted); font-size: .88rem;
+      margin-bottom: 70px;
+    }
+
+    /* ── Print ── */
+    @media print {
+      nav.toc, #consent-banner, header .version { display: none; }
+      .container { display: block; }
+      section { box-shadow: none; break-inside: avoid; }
+      footer { margin-bottom: 0; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .container { flex-direction: column; }
+      nav.toc { width: 100%; position: static; max-height: none; }
+      header { padding: 24px 20px 18px; }
+      header h1 { font-size: 1.4rem; }
+      section { padding: 20px; }
+      #consent-banner { flex-direction: column; align-items: flex-start; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ HEADER -->
+<header>
+  <div class="version">พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562</div>
+  <h1>🔒 นโยบายคุ้มครองข้อมูลส่วนบุคคล</h1>
+  <p>โปรแกรมเคลมต่างด้าว — Foreigner Work Fund (FWF) จังหวัดพังงา &nbsp;|&nbsp; มีผลบังคับใช้: 1 ตุลาคม 2567</p>
+</header>
+
+<div class="container">
+
+  <!-- ═══════════════════ SIDEBAR TOC -->
+  <nav class="toc">
+    <h2>สารบัญ</h2>
+    <ul>
+      <li><a href="#s1">1. บทนำ</a></li>
+      <li><a href="#s2">2. ผู้ควบคุมข้อมูล</a></li>
+      <li><a href="#s3">3. ข้อมูลที่เก็บรวบรวม</a></li>
+      <li><a href="#s4">4. วัตถุประสงค์และฐานกฎหมาย</a></li>
+      <li><a href="#s5">5. การเปิดเผยข้อมูล</a></li>
+      <li><a href="#s6">6. ระยะเวลาเก็บรักษา</a></li>
+      <li><a href="#s7">7. มาตรการรักษาความปลอดภัย</a></li>
+      <li><a href="#s8">8. สิทธิของเจ้าของข้อมูล</a></li>
+      <li><a href="#s9">9. คุกกี้และเทคโนโลยีติดตาม</a></li>
+      <li><a href="#s10">10. การส่งข้อมูลต่างประเทศ</a></li>
+      <li><a href="#s11">11. การแก้ไขนโยบาย</a></li>
+      <li><a href="#s12">12. ติดต่อเจ้าหน้าที่คุ้มครองข้อมูล</a></li>
+    </ul>
+  </nav>
+
+  <!-- ═══════════════════ MAIN -->
+  <main>
+
+    <!-- 1. บทนำ -->
+    <section id="s1">
+      <h2><span class="icon">📋</span> 1. บทนำ</h2>
+      <p>
+        สำนักงานสาธารณสุขจังหวัดพังงา (สสจ.พังงา) ในฐานะผู้ควบคุมข้อมูลส่วนบุคคล
+        ตระหนักถึงความสำคัญของการคุ้มครองข้อมูลส่วนบุคคลตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล
+        พ.ศ. 2562 (PDPA) และกฎหมายที่เกี่ยวข้อง
+      </p>
+      <p>
+        นโยบายนี้อธิบายการเก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคลในระบบโปรแกรมเคลมต่างด้าว
+        (CF PS) ซึ่งใช้สำหรับบริหารจัดการข้อมูลการเบิกจ่ายกองทุนแรงงานต่างด้าว (FWF)
+        ในจังหวัดพังงา
+      </p>
+      <div class="callout callout-info">
+        <strong>ℹ️ ขอบเขตการบังคับใช้</strong>
+        นโยบายนี้ใช้บังคับกับ: เจ้าหน้าที่ผู้ใช้งานระบบ, ข้อมูลแรงงานต่างด้าวที่อยู่ในระบบ
+        และหน่วยบริการสาธารณสุขทุกแห่งในจังหวัดพังงาที่เชื่อมต่อกับระบบ CF PS
+      </div>
+    </section>
+
+    <!-- 2. ผู้ควบคุมข้อมูล -->
+    <section id="s2">
+      <h2><span class="icon">🏥</span> 2. ผู้ควบคุมข้อมูลส่วนบุคคล</h2>
+      <table class="pdpa-table">
+        <thead><tr><th>รายการ</th><th>รายละเอียด</th></tr></thead>
+        <tbody>
+          <tr><td><strong>ชื่อองค์กร</strong></td><td>สำนักงานสาธารณสุขจังหวัดพังงา</td></tr>
+          <tr><td><strong>รหัสหน่วยงาน</strong></td><td>00064</td></tr>
+          <tr><td><strong>ที่ตั้ง</strong></td><td>649 ถนนเพชรเกษม ตำบลท้ายช้าง อำเภอเมืองพังงา จังหวัดพังงา 82000</td></tr>
+          <tr><td><strong>หน่วยงานรับผิดชอบ</strong></td><td>กลุ่มงานเทคโนโลยีสารสนเทศและการสื่อสาร</td></tr>
+          <tr><td><strong>เว็บไซต์หลัก</strong></td><td><a href="https://www.pho.ph.moph.go.th" target="_blank">www.pho.ph.moph.go.th</a></td></tr>
+          <tr><td><strong>เวลาทำการ</strong></td><td>วันจันทร์ – ศุกร์ เวลา 08:30 – 16:30 น.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3. ข้อมูลที่เก็บ -->
+    <section id="s3">
+      <h2><span class="icon">🗂</span> 3. ข้อมูลส่วนบุคคลที่เก็บรวบรวม</h2>
+
+      <h3>3.1 ข้อมูลแรงงานต่างด้าว (เจ้าของข้อมูลหลัก)</h3>
+      <table class="pdpa-table">
+        <thead><tr><th>ประเภทข้อมูล</th><th>รายละเอียด</th><th>ประเภท</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>ข้อมูลระบุตัวตน</strong></td>
+            <td>เลขบัตรประจำตัว (CID), ชื่อ-นามสกุล, วันเกิด, สัญชาติ, เพศ</td>
+            <td><span class="badge badge-orange">ข้อมูลส่วนบุคคล</span></td>
+          </tr>
+          <tr>
+            <td><strong>ข้อมูลสุขภาพ</strong></td>
+            <td>รหัสวินิจฉัยโรค (ICD-10), ประวัติการรักษา IP/OP/PP, ค่าใช้จ่าย</td>
+            <td><span class="badge badge-red">ข้อมูลอ่อนไหว</span></td>
+          </tr>
+          <tr>
+            <td><strong>ข้อมูลกองทุน</strong></td>
+            <td>ช่วงวันคุ้มครอง (FWF), ราคาบัตร, รหัสหน่วยบริการที่ถือกองทุน</td>
+            <td><span class="badge badge-orange">ข้อมูลส่วนบุคคล</span></td>
+          </tr>
+          <tr>
+            <td><strong>ข้อมูลการรักษา</strong></td>
+            <td>เลข AN, HN, วันรับ-จำหน่าย, จำนวนวันนอน, รหัสหัตถการ (ICD-9)</td>
+            <td><span class="badge badge-red">ข้อมูลอ่อนไหว</span></td>
+          </tr>
+          <tr>
+            <td><strong>ข้อมูลกรมธรรม์</strong></td>
+            <td>ข้อมูลกรมธรรม์จาก FDH (Foreign Direct Health) ประกอบด้วยรายละเอียดการซื้อประกัน</td>
+            <td><span class="badge badge-orange">ข้อมูลส่วนบุคคล</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>3.2 ข้อมูลเจ้าหน้าที่ผู้ใช้งานระบบ</h3>
+      <table class="pdpa-table">
+        <thead><tr><th>ประเภทข้อมูล</th><th>รายละเอียด</th></tr></thead>
+        <tbody>
+          <tr><td><strong>ข้อมูลบัญชีผู้ใช้</strong></td><td>ชื่อผู้ใช้ (username), รหัสผ่านที่เข้ารหัสแล้ว, ชื่อ-นามสกุล, รหัสหน่วยบริการ</td></tr>
+          <tr><td><strong>ข้อมูลการเข้าใช้งาน</strong></td><td>วันเวลาเข้าสู่ระบบ, Session token, IP Address</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warning">
+        <strong>⚠️ ข้อมูลสุขภาพ — ข้อมูลอ่อนไหว</strong>
+        ข้อมูลสุขภาพของแรงงานต่างด้าวถือเป็น "ข้อมูลส่วนบุคคลที่อ่อนไหว" (Sensitive Personal Data)
+        ตามมาตรา 26 แห่ง พ.ร.บ. PDPA ซึ่งต้องได้รับความยินยอมโดยชัดแจ้ง หรืออาศัยฐานกฎหมายพิเศษ
+      </div>
+    </section>
+
+    <!-- 4. วัตถุประสงค์ -->
+    <section id="s4">
+      <h2><span class="icon">🎯</span> 4. วัตถุประสงค์และฐานทางกฎหมาย</h2>
+      <table class="pdpa-table">
+        <thead><tr><th>วัตถุประสงค์</th><th>ฐานกฎหมาย (มาตรา)</th><th>รายละเอียด</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>บริหารจัดการการเบิกจ่ายกองทุน FWF</strong></td>
+            <td>
+              <span class="basis-tag">ม.24(3) หน้าที่ตามกฎหมาย</span>
+              <span class="basis-tag">ม.24(4) ประโยชน์สาธารณะ</span>
+            </td>
+            <td>ดำเนินภารกิจตามระเบียบกระทรวงสาธารณสุข เกี่ยวกับกองทุนแรงงานต่างด้าว</td>
+          </tr>
+          <tr>
+            <td><strong>วิเคราะห์และจัดทำรายงานสถิติสาธารณสุข</strong></td>
+            <td>
+              <span class="basis-tag">ม.24(4) ประโยชน์สาธารณะ</span>
+              <span class="basis-tag">ม.26(5)(ก) สาธารณสุข</span>
+            </td>
+            <td>รายงานข้อมูลผู้ป่วย IP/OP/PP เพื่อวางแผนสาธารณสุขระดับจังหวัด</td>
+          </tr>
+          <tr>
+            <td><strong>ตรวจสอบและยืนยันสิทธิ์กองทุน</strong></td>
+            <td>
+              <span class="basis-tag">ม.24(3) หน้าที่ตามกฎหมาย</span>
+            </td>
+            <td>ตรวจสอบว่าแรงงานต่างด้าวมีสิทธิ์รับบริการภายใต้กองทุน FWF หรือไม่</td>
+          </tr>
+          <tr>
+            <td><strong>บริหารจัดการบัญชีผู้ใช้งานระบบ</strong></td>
+            <td>
+              <span class="basis-tag">ม.24(1) ความยินยอม</span>
+              <span class="basis-tag">ม.24(3) หน้าที่ตามกฎหมาย</span>
+            </td>
+            <td>จัดการสิทธิ์เข้าถึงระบบตามหน่วยบริการ</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 5. การเปิดเผย -->
+    <section id="s5">
+      <h2><span class="icon">🤝</span> 5. การเปิดเผยข้อมูลส่วนบุคคล</h2>
+      <p>สสจ.พังงา อาจเปิดเผยข้อมูลส่วนบุคคลให้แก่บุคคลหรือหน่วยงานต่อไปนี้</p>
+      <table class="pdpa-table">
+        <thead><tr><th>ผู้รับข้อมูล</th><th>ประเภทข้อมูล</th><th>วัตถุประสงค์</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>หน่วยบริการสาธารณสุขในจังหวัดพังงา</strong><br><small>(รพ.พังงา, รพ.ตะกั่วป่า ฯลฯ)</small></td>
+            <td>ข้อมูลสิทธิ์กองทุน, ประวัติการรักษา</td>
+            <td>ให้บริการสาธารณสุขและเบิกจ่ายกองทุน</td>
+          </tr>
+          <tr>
+            <td><strong>สำนักงานปลัดกระทรวงสาธารณสุข</strong></td>
+            <td>ข้อมูลสถิติสาธารณสุข (ไม่ระบุตัวตน)</td>
+            <td>รายงานผลการดำเนินงาน</td>
+          </tr>
+          <tr>
+            <td><strong>ระบบ FDH (Foreign Direct Health)</strong><br><small>fdh.moph.go.th</small></td>
+            <td>ข้อมูลกรมธรรม์</td>
+            <td>ตรวจสอบสถานะการซื้อกองทุน FWF</td>
+          </tr>
+          <tr>
+            <td><strong>หน่วยงานราชการตามกฎหมาย</strong></td>
+            <td>ตามที่ร้องขอ</td>
+            <td>การปฏิบัติตามคำสั่งศาล หรือกฎหมายที่บังคับ</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout callout-success">
+        <strong>✅ การรักษาความลับของผู้ประมวลผลข้อมูล</strong>
+        บุคคลภายนอกที่ได้รับข้อมูลในฐานะ "ผู้ประมวลผลข้อมูล" ต้องลงนามในสัญญาและปฏิบัติตาม
+        มาตรการรักษาความปลอดภัยที่กำหนดไว้อย่างเคร่งครัด
+      </div>
+    </section>
+
+    <!-- 6. ระยะเวลา -->
+    <section id="s6">
+      <h2><span class="icon">📅</span> 6. ระยะเวลาเก็บรักษาข้อมูล</h2>
+      <table class="pdpa-table">
+        <thead><tr><th>ประเภทข้อมูล</th><th>ระยะเวลาเก็บ</th><th>เหตุผล</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>ข้อมูลสุขภาพผู้ป่วย (IP/OP/PP)</strong></td>
+            <td><span class="badge badge-blue">10 ปี</span> นับจากวันที่รับบริการ</td>
+            <td>มาตรฐานการเก็บเวชระเบียนตามระเบียบกระทรวงสาธารณสุข</td>
+          </tr>
+          <tr>
+            <td><strong>ข้อมูลกองทุน FWF</strong></td>
+            <td><span class="badge badge-blue">5 ปี</span> นับจากวันสิ้นสุดความคุ้มครอง</td>
+            <td>อายุความทางแพ่ง และการตรวจสอบการเบิกจ่าย</td>
+          </tr>
+          <tr>
+            <td><strong>ข้อมูลกรมธรรม์ (FDH)</strong></td>
+            <td><span class="badge badge-blue">5 ปี</span></td>
+            <td>การตรวจสอบและอ้างอิงย้อนหลัง</td>
+          </tr>
+          <tr>
+            <td><strong>บัญชีผู้ใช้งานระบบ</strong></td>
+            <td><span class="badge badge-green">ตลอดระยะเวลาที่ใช้งาน</span> + 2 ปีหลังยกเลิก</td>
+            <td>การตรวจสอบสิทธิ์และ Audit trail</td>
+          </tr>
+          <tr>
+            <td><strong>Log การเข้าใช้งาน</strong></td>
+            <td><span class="badge badge-green">1 ปี</span></td>
+            <td>ความปลอดภัยทางไซเบอร์และการตรวจสอบ</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info">
+        <strong>ℹ️ การทำลายข้อมูล</strong>
+        เมื่อพ้นกำหนดระยะเวลา ข้อมูลจะถูกลบหรือทำลายอย่างปลอดภัย หรือแปลงเป็นข้อมูล
+        นิรนาม (Anonymization) เพื่อใช้ในงานสถิติ โดยไม่สามารถระบุตัวตนได้อีก
+      </div>
+    </section>
+
+    <!-- 7. มาตรการ -->
+    <section id="s7">
+      <h2><span class="icon">🛡</span> 7. มาตรการรักษาความปลอดภัย</h2>
+      <h3>7.1 มาตรการทางเทคนิค</h3>
+      <ul>
+        <li>การรับส่งข้อมูลผ่าน HTTPS (TLS 1.2+) ทุกช่องทาง</li>
+        <li>รหัสผ่านถูกเข้ารหัสด้วย bcrypt ก่อนบันทึกลงฐานข้อมูล</li>
+        <li>ระบบ Session หมดอายุอัตโนมัติหลังไม่มีการใช้งาน 4 ชั่วโมง</li>
+        <li>การควบคุมการเข้าถึงตาม Role-Based Access Control (RBAC)</li>
+        <li>การบันทึก Audit Log ทุกการกระทำที่มีผลต่อข้อมูล</li>
+        <li>ฐานข้อมูลตั้งอยู่ภายในเครือข่ายภายใน (Intranet) ไม่เปิดสู่สาธารณะ</li>
+      </ul>
+      <h3>7.2 มาตรการทางองค์กร</h3>
+      <ul>
+        <li>จำกัดสิทธิ์การเข้าถึงข้อมูลตามหน้าที่และหน่วยบริการ</li>
+        <li>เจ้าหน้าที่ผ่านการอบรมด้านการคุ้มครองข้อมูลส่วนบุคคล</li>
+        <li>มีข้อตกลงการรักษาความลับ (NDA) สำหรับผู้ที่เข้าถึงข้อมูล</li>
+        <li>การตรวจสอบสิทธิ์ผู้ใช้งานเป็นระยะ</li>
+        <li>กำหนดขั้นตอนรับมือเหตุการณ์ละเมิดข้อมูล (Incident Response Plan)</li>
+      </ul>
+    </section>
+
+    <!-- 8. สิทธิ -->
+    <section id="s8">
+      <h2><span class="icon">⚖️</span> 8. สิทธิของเจ้าของข้อมูลส่วนบุคคล</h2>
+      <p>เจ้าของข้อมูลส่วนบุคคลมีสิทธิตาม พ.ร.บ. PDPA ดังนี้</p>
+      <div class="rights-grid">
+        <div class="right-card">
+          <div class="rc-icon">👁</div>
+          <h4>สิทธิ์เข้าถึงข้อมูล</h4>
+          <p>ขอดูข้อมูลส่วนบุคคลของตนที่ระบบเก็บไว้ (ม.30)</p>
+        </div>
+        <div class="right-card">
+          <div class="rc-icon">✏️</div>
+          <h4>สิทธิ์แก้ไขข้อมูล</h4>
+          <p>ขอให้แก้ไขข้อมูลที่ไม่ถูกต้องหรือไม่สมบูรณ์ (ม.35)</p>
+        </div>
+        <div class="right-card">
+          <div class="rc-icon">🗑</div>
+          <h4>สิทธิ์ลบข้อมูล</h4>
+          <p>ขอให้ลบข้อมูลเมื่อหมดความจำเป็น (ม.33)</p>
+        </div>
+        <div class="right-card">
+          <div class="rc-icon">⏸</div>
+          <h4>สิทธิ์ระงับการใช้</h4>
+          <p>ขอให้ระงับการใช้ข้อมูลชั่วคราว (ม.34)</p>
+        </div>
+        <div class="right-card">
+          <div class="rc-icon">📦</div>
+          <h4>สิทธิ์โอนข้อมูล</h4>
+          <p>ขอรับข้อมูลในรูปแบบที่สามารถอ่านได้โดยเครื่อง (ม.31)</p>
+        </div>
+        <div class="right-card">
+          <div class="rc-icon">🚫</div>
+          <h4>สิทธิ์คัดค้าน</h4>
+          <p>คัดค้านการประมวลผลข้อมูลในบางกรณี (ม.32)</p>
+        </div>
+        <div class="right-card">
+          <div class="rc-icon">↩️</div>
+          <h4>สิทธิ์ถอนความยินยอม</h4>
+          <p>ถอนความยินยอมได้ทุกเมื่อ โดยไม่กระทบการดำเนินการก่อนหน้า (ม.19)</p>
+        </div>
+        <div class="right-card">
+          <div class="rc-icon">📣</div>
+          <h4>สิทธิ์ร้องเรียน</h4>
+          <p>ร้องเรียนต่อคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (ม.73)</p>
+        </div>
+      </div>
+      <div class="callout callout-info" style="margin-top:20px;">
+        <strong>ℹ️ การยื่นคำร้อง</strong>
+        ยื่นคำร้องได้ที่ <strong>กลุ่มงานเทคโนโลยีสารสนเทศ สสจ.พังงา</strong>
+        ระบบจะดำเนินการภายใน <strong>30 วัน</strong> นับแต่วันรับคำร้อง
+        หากมีเหตุจำเป็น อาจขยายเวลาได้อีกไม่เกิน 60 วัน พร้อมแจ้งให้ทราบ
+      </div>
+    </section>
+
+    <!-- 9. คุกกี้ -->
+    <section id="s9">
+      <h2><span class="icon">🍪</span> 9. คุกกี้และเทคโนโลยีติดตาม</h2>
+      <table class="pdpa-table">
+        <thead><tr><th>ประเภทคุกกี้</th><th>วัตถุประสงค์</th><th>ระยะเวลา</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>คุกกี้ที่จำเป็น</strong><br><span class="badge badge-green">จำเป็น</span></td>
+            <td>เก็บ Session ID สำหรับการเข้าสู่ระบบ และ CSRF Token เพื่อความปลอดภัย</td>
+            <td>ตลอด Session / ปิดเบราว์เซอร์</td>
+          </tr>
+          <tr>
+            <td><strong>คุกกี้ยืนยันการรับทราบ PDPA</strong><br><span class="badge badge-blue">ฟังก์ชันการทำงาน</span></td>
+            <td>จดจำว่าผู้ใช้รับทราบนโยบายนี้แล้ว ไม่ต้องแสดงซ้ำทุกครั้ง</td>
+            <td>365 วัน</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>ระบบ CF PS <strong>ไม่ใช้</strong> คุกกี้เพื่อการติดตามพฤติกรรม (Tracking) หรือการโฆษณา</p>
+    </section>
+
+    <!-- 10. ต่างประเทศ -->
+    <section id="s10">
+      <h2><span class="icon">🌐</span> 10. การส่งข้อมูลไปยังต่างประเทศ</h2>
+      <p>
+        ระบบ CF PS <strong>ไม่ส่งข้อมูลส่วนบุคคลไปยังต่างประเทศ</strong>
+        ข้อมูลทั้งหมดจัดเก็บบนเซิร์ฟเวอร์ภายในเครือข่ายของหน่วยงานสาธารณสุขจังหวัดพังงา
+        ภายในประเทศไทย
+      </p>
+      <div class="callout callout-success">
+        <strong>✅ การเชื่อมต่อกับระบบ FDH</strong>
+        การรับส่งข้อมูลกับระบบ FDH (fdh.moph.go.th) เป็นเซิร์ฟเวอร์ภายในประเทศไทย
+        ภายใต้การดูแลของกระทรวงสาธารณสุข
+      </div>
+    </section>
+
+    <!-- 11. การแก้ไข -->
+    <section id="s11">
+      <h2><span class="icon">📝</span> 11. การแก้ไขนโยบาย</h2>
+      <p>
+        สสจ.พังงา ขอสงวนสิทธิ์ในการแก้ไขนโยบายนี้ตามความจำเป็น เพื่อให้สอดคล้องกับ
+        กฎหมาย ระเบียบ และแนวปฏิบัติที่เปลี่ยนแปลง การแก้ไขที่มีนัยสำคัญจะแจ้งให้
+        ผู้ใช้งานระบบทราบผ่านหน้าเข้าสู่ระบบ
+      </p>
+      <table class="pdpa-table">
+        <thead><tr><th>เวอร์ชัน</th><th>วันที่</th><th>รายการเปลี่ยนแปลง</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-green">v1.0</span></td>
+            <td>1 ตุลาคม 2567</td>
+            <td>ประกาศใช้นโยบายครั้งแรก</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 12. ติดต่อ DPO -->
+    <section id="s12">
+      <h2><span class="icon">📞</span> 12. ติดต่อเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO)</h2>
+      <p>หากมีข้อสงสัย ต้องการใช้สิทธิ์ หรือพบการละเมิดข้อมูล กรุณาติดต่อ</p>
+      <table class="pdpa-table">
+        <thead><tr><th>ช่องทาง</th><th>รายละเอียด</th></tr></thead>
+        <tbody>
+          <tr><td><strong>หน่วยงาน</strong></td><td>สำนักงานสาธารณสุขจังหวัดพังงา (สสจ.พังงา)</td></tr>
+          <tr><td><strong>ฝ่ายรับผิดชอบ</strong></td><td>กลุ่มงานประกันสุขภาพ</td></tr>
+          <tr><td><strong>ที่อยู่</strong></td><td>649 ถนนเพชรเกษม ตำบลท้ายช้าง อำเภอเมืองพังงา จังหวัดพังงา 82000</td></tr>
+          <tr><td><strong>เวลาทำการ</strong></td><td>วันจันทร์ – ศุกร์ เวลา 08:30 – 16:30 น.</td></tr>
+          <tr><td><strong>เว็บไซต์</strong></td><td><a href="https://www.pho.ph.moph.go.th" target="_blank">www.pho.ph.moph.go.th</a></td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-warning">
+        <strong>⚠️ กรณีพบการละเมิดข้อมูล</strong>
+        หากพบหรือสงสัยว่ามีการละเมิดข้อมูลส่วนบุคคล กรุณาแจ้งทันทีผ่านช่องทางข้างต้น
+        สสจ.พังงา จะแจ้งต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลภายใน <strong>72 ชั่วโมง</strong>
+        ตามที่กฎหมายกำหนด
+      </div>
+      <div class="callout callout-info" style="margin-top:12px;">
+        <strong>ℹ️ หน่วยงานกำกับดูแล</strong>
+        สำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (PDPC)
+        เว็บไซต์: <a href="https://www.pdpc.or.th" target="_blank">www.pdpc.or.th</a>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <p>นโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA) — โปรแกรมเคลมต่างด้าว FWF พังงา &nbsp;|&nbsp; สสจ.พังงา &nbsp;|&nbsp; มีผลบังคับใช้: 1 ตุลาคม 2567</p>
+  <p style="margin-top:6px;"><a href="manual.html">📋 คู่มือการใช้งาน</a></p>
+</footer>
+
+<!-- ════════════ CONSENT BANNER ════════════ -->
+<div id="consent-banner">
+  <p>
+    🔒 เว็บไซต์นี้ใช้คุกกี้ที่จำเป็นสำหรับการทำงานของระบบ และประมวลผลข้อมูลส่วนบุคคลของแรงงานต่างด้าวเพื่อการให้บริการสาธารณสุข
+    ตาม <a href="#s1">นโยบายคุ้มครองข้อมูลส่วนบุคคล</a> ของ สสจ.พังงา
+  </p>
+  <button class="btn-accept" onclick="acceptConsent()">รับทราบและยอมรับ</button>
+  <button class="btn-decline" onclick="declineConsent()">อ่านนโยบายก่อน</button>
+</div>
+
+<!-- ════════════ SCRIPTS ════════════ -->
+<script>
+/* ── Consent banner ── */
+(function () {
+  if (localStorage.getItem('pdpa_consent_cfps') === '1') {
+    document.getElementById('consent-banner').style.display = 'none';
+  }
+})();
+
+function acceptConsent() {
+  localStorage.setItem('pdpa_consent_cfps', '1');
+  var banner = document.getElementById('consent-banner');
+  banner.style.transition = 'opacity .4s';
+  banner.style.opacity = '0';
+  setTimeout(function () { banner.style.display = 'none'; }, 400);
+}
+
+function declineConsent() {
+  document.getElementById('consent-banner').style.display = 'none';
+  document.getElementById('s1').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ── Active TOC highlight on scroll ── */
+(function () {
+  var sections = document.querySelectorAll('section[id]');
+  var links    = document.querySelectorAll('nav.toc a[href^="#"]');
+
+  function activate() {
+    var scrollY = window.scrollY + 110;
+    var active  = sections[0];
+    sections.forEach(function (s) {
+      if (s.offsetTop <= scrollY) active = s;
+    });
+    links.forEach(function (a) {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + active.id);
+    });
+  }
+
+  window.addEventListener('scroll', activate, { passive: true });
+  activate();
+})();
+</script>
+
+</body>
+</html>

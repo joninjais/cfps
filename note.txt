@@ -1,0 +1,65 @@
+copy controllers กับ views จาก ip .1.83 มาทับ
+
+สร้าง store PROCEDURE
+
+--------------------------------------------
+
+DELIMITER //
+
+CREATE PROCEDURE InsertIntoFWFDatabase()
+BEGIN
+    INSERT INTO fwfdatabase 
+        (PeriodID, PeriodStartDate, PeriodEndDate, CID, FundHolderID, fname, lname, timeregis, regisdate, exsfile)
+    SELECT DISTINCT
+        pt.PeriodID,
+        pt.PeriodStartDate,
+        pt.PeriodEndDate,
+        rt.CID,
+        rt.FundHolderID,
+        rt.fname,
+        rt.lname,
+        rt.period_name AS timeregis,
+        rt.RegistrationDate AS regisdate,
+        NOW() AS exsfile
+    FROM registrationtbl_tmp rt
+    INNER JOIN periodtbl_tmp pt ON pt.PeriodID = rt.PeriodID
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM fwfdatabase fwf
+        WHERE fwf.CID = rt.CID 
+          AND fwf.PeriodStartDate = pt.PeriodStartDate
+          AND fwf.PeriodEndDate = pt.PeriodEndDate
+          AND fwf.FundHolderID = rt.FundHolderID
+    );
+END //
+
+DELIMITER ;
+
+
+--------------------------------------------
+
+มีประเด็น Fcode ซ้ำ
+F048827653015
+
+
+ประเด็นปรับปรุง
+บัตรหมดอายุแล้วใช้ต่อได้ 1 เดือน
+เพิ่มอันดับโรค
+แยกเพศ
+ข้อมูลหญิงตั้งครรภ์ จับกับ icd10 ...
+รายงาน OP ค่าใช้จ่ายเกิน 700 รายหน่วยบริการ สสจ.ดูทั้งหมด
+ข้อมูล ส่งต่อ ต่างจังหวัด จาก สสจ.
+ข้อมูลที่มีค่าใช้จ่ายเกิน 10,000 รายหน่วยบริการ สสจ.ดูทั้งหมด
+เพิ่มระบบนำเข้า user ด้วยไฟล์ excel
+
+เพิ่ม colums ทั้ง op ip
+Hcode,Vstdate,Pmname,sex,p_age(y),nation,สังกัด/กองทุน,Cid,Hn,Vn,Icd10,icd9,Inc01,Inc02,Inc03,Inc04,Inc05,Inc06,Inc07,Inc08,Inc09,Inc10,Inc11,Inc12,Inc13,Inc14,Inc15,Inc16,Alltotal,refer_out(เลข refer),refer_hosp
+
+
+
+แนวทางการพัฒนาต่อ
+เปลี่ยนสถาปัตยกรรมเป็น Hybrid (API + Modern Frontend)
+เปลี่ยนระบบไปเป็น Headless API
+เก็บระบบ Yii2 เดิมไว้ทำหน้าที่เป็น RESTful API (เพราะ Yii2 ทำ API ได้ดีและเสถียรมาก)
+เขียนฝั่งหน้าบ้าน (Frontend) ใหม่ด้วย Framework ยอดนิยมในยุคนี้ เช่น Next.js (React) หรือ Nuxt (Vue)
+วิธีแก้เรื่อง Kartik Grid/Export: ในฝั่ง Frontend สมัยใหม่มี Library จัดการตารางและ Export ที่ทรงพลังกว่า Kartik มาก เช่น TanStack Table (React Table) หรือ DataTables ซึ่งสามารถดึงข้อมูล JSON จาก Yii2 API มาแสดงผล ทำ Filter, Sort และ Export ฝั่ง Client ได้อย่างรวดเร็วโดยไม่เปลืองแรงเซิร์ฟเวอร์
