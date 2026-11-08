@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "mysql": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@benborla/mcp-server-mysql"
+      ],
+      "env": {
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USER": "frg-dev",
+        "MYSQL_PASSWORD": "Frg-dev11354",
+        "MYSQL_DATABASE": "frg-dev"
+      }
+    },
+    "context7": {
+        "command": "npx",
+        "args": [
+            "-y",
+            "@upstash/context7-mcp@latest"
+        ]
+    }    
+  }
+}

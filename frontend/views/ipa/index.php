@@ -70,10 +70,6 @@ if(!$checklogin){
 echo GridView::widget([
         'dataProvider' => $dataProvider,
         //'filterModel' => $searchModel,
-        'formatter' => [
-            'class' => 'yii\i18n\Formatter',
-            'nullDisplay' => '',
-        ],           
         'panel'=>[
             'before'=>'ข้อมูล IP (A)',
             'after'=>'ประมวลผล ณ '.date('Y-m-d H:i:s'),

@@ -330,14 +330,7 @@ table.cfps-table th h5 {
 .ssj-table tr.tr-total td    { background: #fff9c4 !important; font-weight: 700; }
 
 /* ── Responsive tweak for month row ───────────────────────── */
-.cfps-menu-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
 @media (max-width: 768px) {
-  .cfps-menu-grid { grid-template-columns: 1fr; }
   .cfps-toolbar .btn-month { font-size: 0.88rem; padding: 3px 6px; }
   .ssj-table { font-size: 0.88rem; }
 }
@@ -359,111 +352,47 @@ table.cfps-table th h5 {
             </div>
             <!-- /.box-header -->
           <div class="box-body">
-            <div class="cfps-menu-grid" aria-label="เมนูทางลัด">
-              <section class="cfps-menu-card" aria-labelledby="cfps-menu-start">
-                <header class="cfps-menu-heading">
-                  <span class="cfps-menu-heading-icon"><i class="fa fa-book" aria-hidden="true"></i></span>
-                  <span>
-                    <h4 id="cfps-menu-start">คู่มือและเครื่องมือ</h4>
-                    <p>เอกสารประกอบและเครื่องมือจัดการข้อมูล</p>
-                  </span>
-                </header>
-                <nav aria-label="คู่มือและเครื่องมือ">
-                  <ul class="cfps-menu-links">
-                    <li>
-                      <a href="/manual.html" target="_blank" rel="noopener noreferrer">
-                        <i class="fa fa-book" aria-hidden="true"></i>
-                        <span>คู่มือการใช้งาน<small>แนะนำขั้นตอนการใช้งานระบบ</small></span>
-                        <i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="<?= \yii\helpers\Url::to(['/sqlcode/index']) ?>">
-                        <i class="fa fa-code" aria-hidden="true"></i>
-                        <span><?= $hoscode == '00064' ? 'จัดการคำสั่ง SQL นำเข้าข้อมูล' : 'คำสั่ง SQL นำเข้าข้อมูล' ?><small>ดูคำสั่งสำหรับนำเข้าข้อมูล</small></span>
-                        <i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="/pdpa.html" target="_blank" rel="noopener noreferrer">
-                        <i class="fa fa-shield" aria-hidden="true"></i>
-                        <span>นโยบาย PDPA<small>แนวทางการคุ้มครองข้อมูลส่วนบุคคล</small></span>
-                        <i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i>
-                      </a>
-                    </li>
-                  </ul>
-                </nav>
-              </section>
-
-              <section class="cfps-menu-card" aria-labelledby="cfps-menu-import">
-                <header class="cfps-menu-heading">
-                  <span class="cfps-menu-heading-icon"><i class="fa fa-cloud-upload" aria-hidden="true"></i></span>
-                  <span>
-                    <h4 id="cfps-menu-import">นำเข้าข้อมูล</h4>
-                    <p>เลือกประเภทไฟล์ตามข้อมูลที่ต้องการนำเข้า</p>
-                  </span>
-                </header>
-                <nav aria-label="นำเข้าข้อมูล">
-                  <ul class="cfps-menu-links">
+            <div class="col-md-6">
+              <p class="text-muted" style="font-size:0.82rem;margin-bottom:8px;"><i class="fa fa-upload"></i> <strong>อัพโหลด / นำเข้าข้อมูล</strong></p>
+              <div class="cfps-link-list">
                 <?php if($hoscode == '00064'): ?>
-                    <li><a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'fwfdata']) ?>"><i class="fa fa-upload" aria-hidden="true"></i><span>อัปโหลดไฟล์ FWF<small>นำเข้าข้อมูล FWF</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
+                  <a href="/manual.html" target="_blank"><i class="fa fa-book"></i> คู่มือการใช้งาน</a>
+                  <a href="<?= \yii\helpers\Url::to(['/sqlcode/index']) ?>"><i class="fa fa-fw fa-code"></i> จัดการคำสั่ง SQL นำเข้าข้อมูล</a>
+                  <a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'fwfdata']) ?>"><i class="fa fa-fw fa-upload"></i> อัพโหลดไฟล์ FWF</a>
                 <?php endif; ?>
                 <?php if($hoscode != '00064'): ?>
-                    <li><a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'op pp']) ?>"><i class="fa fa-upload" aria-hidden="true"></i><span>อัปโหลดไฟล์ OP PP<small>ข้อมูลผู้ป่วยนอกและส่งเสริมสุขภาพ</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <li><a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'ip']) ?>"><i class="fa fa-upload" aria-hidden="true"></i><span>อัปโหลดไฟล์ IP<small>ข้อมูลผู้ป่วยใน</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <li><a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'insurance']) ?>"><i class="fa fa-upload" aria-hidden="true"></i><span>อัปโหลดข้อมูลกรมธรรม์ (FDH)<small>นำเข้าข้อมูลกรมธรรม์</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <!-- <li><a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'fwfhealth']) ?>"><i class="fa fa-upload" aria-hidden="true"></i><span>อัปโหลดไฟล์บัตรประกันสุขภาพ</span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li> -->
+                  <a href="/manual.html" target="_blank"><i class="fa fa-book"></i> คู่มือการใช้งาน</a>
+                  <a href="<?= \yii\helpers\Url::to(['/sqlcode/index']) ?>"><i class="fa fa-fw fa-code"></i> คำสั่ง SQL นำเข้าข้อมูล</a>
+                  <a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'op pp']) ?>"><i class="fa fa-fw fa-upload"></i> อัพโหลดไฟล์ OP PP</a>
+                  <a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'ip']) ?>"><i class="fa fa-fw fa-upload"></i> อัพโหลดไฟล์ IP</a>
+                  <a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'insurance']) ?>"><i class="fa fa-fw fa-upload"></i> อัพโหลดไฟล์ ข้อมูลกรมธรรม์ (FDH)</a>
+                  <!-- <a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/create', 'typefile' => 'fwfhealth']) ?>"><i class="fa fa-fw fa-upload"></i> อัพโหลดไฟล์ บัตรประกันสุขภาพ</a> -->
                 <?php endif; ?>
-                    <li><a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/index']) ?>"><i class="fa fa-history" aria-hidden="true"></i><span>ประวัตินำเข้าข้อมูล<small>ตรวจสอบรายการไฟล์ที่เคยนำเข้า</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                  </ul>
-                </nav>
-              </section>
-
-              <section class="cfps-menu-card" aria-labelledby="cfps-menu-eligibility">
-                <header class="cfps-menu-heading">
-                  <span class="cfps-menu-heading-icon"><i class="fa fa-check-circle" aria-hidden="true"></i></span>
-                  <span>
-                    <h4 id="cfps-menu-eligibility">ตรวจสอบสิทธิ</h4>
-                    <p>เชื่อมต่อระบบตรวจสอบสิทธิของหน่วยงาน</p>
-                  </span>
-                </header>
-                <nav aria-label="ตรวจสอบสิทธิ">
-                  <ul class="cfps-menu-links">
-                    <li><a href="https://fwf.moph.go.th/PublicCIDCheck" target="_blank" rel="noopener noreferrer"><i class="fa fa-external-link" aria-hidden="true"></i><span>ตรวจสอบสิทธิกองทุนประกันสุขภาพคนต่างด้าว<small>ระบบตรวจสอบสิทธิ FWF</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <li><a href="https://fdh.moph.go.th/fwf/eligibility-check" target="_blank" rel="noopener noreferrer"><i class="fa fa-external-link" aria-hidden="true"></i><span>ตรวจสอบสิทธิผ่านระบบ FDH<small>ระบบกระทรวงสาธารณสุข</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                  </ul>
-                </nav>
-              </section>
-
-              <section class="cfps-menu-card" aria-labelledby="cfps-menu-reports">
-                <header class="cfps-menu-heading">
-                  <span class="cfps-menu-heading-icon"><i class="fa fa-bar-chart" aria-hidden="true"></i></span>
-                  <span>
-                    <h4 id="cfps-menu-reports">รายงานและตรวจสอบข้อมูล</h4>
-                    <p>ดูข้อมูลบริการและรายงานการเบิกจ่าย</p>
-                  </span>
-                </header>
-                <nav aria-label="รายงานและตรวจสอบข้อมูล">
-                  <ul class="cfps-menu-links cfps-menu-links--columns">
-                    <li><a href="<?= \yii\helpers\Url::to(['/site/dashboard']) ?>"><i class="fa fa-tachometer" aria-hidden="true"></i><span>Dashboard<small>ภาพรวมข้อมูลและผลการดำเนินงาน</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <li><a href="<?= \yii\helpers\Url::to(['/fwfdatabase/index']) ?>"><i class="fa fa-database" aria-hidden="true"></i><span>ตรวจสอบข้อมูล Fwfdatabase<small>ค้นหาข้อมูลในฐาน FWF</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
+                <a href="<?= \yii\helpers\Url::to(['/xlsfileuploads/index']) ?>"><i class="fa fa-fw fa-cloud-download"></i> ประวัตินำเข้าข้อมูล</a>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <p class="text-muted" style="font-size:0.82rem;margin-bottom:8px;"><i class="fa fa-search"></i> <strong>ตรวจสอบ / รายงาน</strong></p>
+              <div class="cfps-link-list">
+                <a href="/pdpa.html" target="_blank"><i class="fa fa-shield"></i> นโยบาย PDPA</a>
+                <a href="<?= \yii\helpers\Url::to(['/site/dashboard']) ?>"><i class="fa fa-fw fa-tachometer"></i> Dashboard</a>
+                <a href="<?= \yii\helpers\Url::to(['/fwfdatabase/index']) ?>"><i class="fa fa-fw fa-database"></i> ตรวจสอบข้อมูล Fwfdatabase</a>
+                <a href="https://fwf.moph.go.th/PublicCIDCheck" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-external-link"></i> ตรวจสอบสิทธิ กองทุนประกันสุขภาพคนต่างด้าว</a>
+                <a href="https://fdh.moph.go.th/fwf/eligibility-check" target="_blank" rel="noopener noreferrer"><i class="fa fa-fw fa-external-link"></i> ระบบตรวจสอบสิทธิกองทุนประกันสุขภาพคนต่างด้าวหรือแรงงานต่างด้าว กระทรวงสาธารณสุข(FDH)</a>
                 <?php if($hoscode != '00064'): ?>
-                    <li><a href="<?= \yii\helpers\Url::to(['/opdatainfo/index']) ?>"><i class="fa fa-stethoscope" aria-hidden="true"></i><span>ตรวจสอบข้อมูล OP PP<small>ข้อมูลผู้ป่วยนอกและส่งเสริมสุขภาพ</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <li><a href="<?= \yii\helpers\Url::to(['/ipdatainfo/index']) ?>"><i class="fa fa-bed" aria-hidden="true"></i><span>ตรวจสอบข้อมูล IP<small>ข้อมูลผู้ป่วยใน</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <li><a href="<?= \yii\helpers\Url::to(['/insurancepolicies/index']) ?>"><i class="fa fa-file-text-o" aria-hidden="true"></i><span>ตรวจสอบข้อมูลกรมธรรม์<small>ข้อมูลประกันสุขภาพ</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <li><a href="<?= \yii\helpers\Url::to(['/deptor/index']) ?>"><i class="fa fa-file-text-o" aria-hidden="true"></i><span>ลูกหนี้ตามจ่าย<small>ติดตามข้อมูลการเบิกจ่าย</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <!-- <li><a href="<?= \yii\helpers\Url::to(['/fwfhealth/index']) ?>"><i class="fa fa-id-card-o" aria-hidden="true"></i><span>ตรวจสอบข้อมูลบัตรสุขภาพ</span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li> -->
-                    <!-- <li><a href="<?= \yii\helpers\Url::to(['/fwfhealthclient/index']) ?>"><i class="fa fa-bar-chart" aria-hidden="true"></i><span>รายงานสรุปบัตรสุขภาพ</span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li> -->
+                  <a href="<?= \yii\helpers\Url::to(['/opdatainfo/index']) ?>"><i class="fa fa-fw fa-stethoscope"></i> ตรวจสอบข้อมูล OP PP</a>
+                  <a href="<?= \yii\helpers\Url::to(['/ipdatainfo/index']) ?>"><i class="fa fa-fw fa-bed"></i> ตรวจสอบข้อมูล IP</a>
+                  <a href="<?= \yii\helpers\Url::to(['/insurancepolicies/index']) ?>"><i class="fa fa-fw fa-file-text-o"></i> ตรวจสอบข้อมูล กรมธรรม์</a>
+                  <a href="<?= \yii\helpers\Url::to(['/deptor/index']) ?>"><i class="fa fa-fw fa-file-text-o"></i> ลูกหนี้ตามจ่าย</a>
+                  <!-- <a href="<?= \yii\helpers\Url::to(['/fwfhealth/index']) ?>"><i class="fa fa-fw fa-id-card-o"></i> ตรวจสอบข้อมูล บัตรสุขภาพ</a> -->
+                  <!-- <a href="<?= \yii\helpers\Url::to(['/fwfhealthclient/index']) ?>"><i class="fa fa-fw fa-bar-chart"></i> รายงานสรุป บัตรสุขภาพ</a> -->
                 <?php endif; ?>
                 <?php if($hoscode == '00064'): ?>
-                    <li><a href="<?= \yii\helpers\Url::to(['/insurancepolicies/index']) ?>"><i class="fa fa-file-text-o" aria-hidden="true"></i><span>ตรวจสอบข้อมูลกรมธรรม์<small>ข้อมูลประกันสุขภาพ</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <li><a href="<?= \yii\helpers\Url::to(['/refer-claim/index']) ?>"><i class="fa fa-exchange" aria-hidden="true"></i><span>ค่ารักษาส่งต่อ (นค.1)<small>รายงานข้อมูลการส่งต่อ</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                    <!-- <li><a href="<?= \yii\helpers\Url::to(['/fwfhealthms/index']) ?>"><i class="fa fa-bar-chart" aria-hidden="true"></i><span>รายงานสรุปบัตรสุขภาพ</span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li> -->
+                  <a href="<?= \yii\helpers\Url::to(['/insurancepolicies/index']) ?>"><i class="fa fa-fw fa-file-text-o"></i> ตรวจสอบข้อมูล กรมธรรม์</a>
+                  <!-- <a href="<?= \yii\helpers\Url::to(['/fwfhealthms/index']) ?>"><i class="fa fa-fw fa-bar-chart"></i> รายงานสรุป บัตรสุขภาพ</a> -->
                 <?php endif; ?>
-                    <li><a href="<?= \yii\helpers\Url::to(['/fwf-fy-claim/index']) ?>"><i class="fa fa-calendar-o" aria-hidden="true"></i><span>กองทุน Claim ตามปีงบประมาณ<small>ดูรายงานแยกตามปีงบประมาณ</small></span><i class="fa fa-angle-right cfps-menu-arrow" aria-hidden="true"></i></a></li>
-                  </ul>
-                </nav>
-              </section>
+                <a href="<?= \yii\helpers\Url::to(['/fwf-fy-claim/index']) ?>"><i class="fa fa-fw fa-calendar-o"></i> กองทุน Claim ตามปีงบประมาณ</a>
+              </div>
             </div>
             <div class="col-md-12">              
           

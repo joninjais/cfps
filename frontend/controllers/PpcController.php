@@ -5,7 +5,7 @@ use yii\data\ActiveDataProvider;
 use yii\data\ArrayDataProvider;
 use yii;
 
-class PpcController extends BaseController
+class PpcController extends \yii\web\Controller
 {
     public function actionIndex()
     {

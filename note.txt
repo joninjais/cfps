@@ -1,3 +1,5 @@
+copy controllers กับ views จาก ip .1.83 มาทับ
+
 สร้าง store PROCEDURE
 
 --------------------------------------------
@@ -36,6 +38,8 @@ DELIMITER ;
 
 --------------------------------------------
 
+มีประเด็น Fcode ซ้ำ
+F048827653015
 
 
 ประเด็นปรับปรุง
@@ -48,29 +52,10 @@ DELIMITER ;
 ข้อมูลที่มีค่าใช้จ่ายเกิน 10,000 รายหน่วยบริการ สสจ.ดูทั้งหมด
 เพิ่มระบบนำเข้า user ด้วยไฟล์ excel
 
-เพิ่ม colums ทั้ง 2 ตาราง opdata และ ipdata ต่อท้าย
-refer_number = เก็บเลขที่ refer
-refertohospcode = รหัสหน่วยบริการที่ส่งต่อ
-sex = 1 = ชาย, 2 = หญิง
-p_age = อายุเป็นปี
-
-ถ้า
+เพิ่ม colums ทั้ง op ip
+Hcode,Vstdate,Pmname,sex,p_age(y),nation,สังกัด/กองทุน,Cid,Hn,Vn,Icd10,icd9,Inc01,Inc02,Inc03,Inc04,Inc05,Inc06,Inc07,Inc08,Inc09,Inc10,Inc11,Inc12,Inc13,Inc14,Inc15,Inc16,Alltotal,refer_out(เลข refer),refer_hosp
 
 
-ตรวจสอบหัวตารางในไฟล์ excel ก่อนนำเข้า ของ opdata และ ipdata ต้องตรงกับที่กำหนดดังนี้
-หัวตารางต้องอยู่แถวที่ 1 ชื่อและลำดับต้องตรงทุกคอลัมน์ รวมตัวพิมพ์เล็ก/ใหญ่ ห้ามมีหัวคอลัมน์เพิ่มเติม
-ตาราง opdata
-hospcode | dateserv | name | fund | cid | hn | seq | icd10 | m1 | m2 | m3 | m4 | m5 | m6 | m7 | m8 | m9 | m10 | m11 | m12 | m13 | m14 | m15 | m16 | alltotal | refer_number | refertohospcode | sex | p_age | nation
-
-ตาราง ipdata
-hospcode | admitdate | dischartdate | name | fund | cid | hn | an | icd10 | icd9 | los | cost | adjrw | costadjrw | refer_number | refertohospcode | sex | p_age | nation
-
-
-
-ค่าของ nation = 048, 265, 056, 266, 046, 057, 264 ตรวจก่อนนำเข้า ทั้ง OpdatainfoController และ IpdatainfoController 
-หัวตารางของไฟล์ excel ที่นำเข้าต้องตรงกับตารางในฐานข้อมูล
-
-รหัสโรงพยาบาลใหม่
 
 แนวทางการพัฒนาต่อ
 เปลี่ยนสถาปัตยกรรมเป็น Hybrid (API + Modern Frontend)

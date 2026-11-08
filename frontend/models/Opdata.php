@@ -35,11 +35,6 @@ use Yii;
  * @property string $alltotal
  * @property string $FundHolderID
  * @property string $exsfile
- * @property string $refer_number
- * @property string $refertohospcode
- * @property string $sex
- * @property int $p_age
- * @property string $nation
  */
 class Opdata extends \yii\db\ActiveRecord
 {
@@ -63,11 +58,6 @@ class Opdata extends \yii\db\ActiveRecord
             [['name', 'fund', 'icd10','exsfile'], 'string', 'max' => 255],
             [['cid'], 'string', 'max' => 13],
             [['hn', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm9', 'm10', 'm11', 'm12', 'm13', 'm14', 'm15', 'm16'], 'string', 'max' => 50],
-            [['refer_number'], 'string', 'max' => 50],
-            [['refertohospcode'], 'string', 'max' => 5],
-            [['sex'], 'in', 'range' => ['1', '2']],
-            [['p_age'], 'integer', 'min' => 0],
-            [['nation'], 'in', 'range' => ['048', '265', '056', '266', '046', '057', '264', '208']],
         ];
     }
 
@@ -105,11 +95,6 @@ class Opdata extends \yii\db\ActiveRecord
             'alltotal' => 'รวมค่าบริการ',
             'FundHolderID' => 'กองทุน',
             'exsfile' => 'ชื่อไฟล์ excel ที่นำเข้าข้อมูล',
-            'refer_number' => 'เลขที่ Refer',
-            'refertohospcode' => 'รหัสหน่วยบริการที่ส่งต่อ',
-            'sex' => 'เพศ',
-            'p_age' => 'อายุ (ปี)',
-            'nation' => 'สัญชาติ',
         ];
     }
 }
