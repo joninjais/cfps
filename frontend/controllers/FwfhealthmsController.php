@@ -4,7 +4,7 @@ namespace frontend\controllers;
 use yii\data\ArrayDataProvider;
 use yii;
 
-class FwfhealthmsController extends \yii\web\Controller
+class FwfhealthmsController extends BaseController
 {
     public function actionIndex()
     {

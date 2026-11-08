@@ -22,6 +22,11 @@ use Yii;
  * @property string $adjrw
  * @property int $los
  * @property string $costadjrw
+ * @property string $refer_number
+ * @property string $refertohospcode
+ * @property string $sex
+ * @property int $p_age
+ * @property string $nation
  */
 class Ipdata extends \yii\db\ActiveRecord
 {
@@ -50,6 +55,11 @@ class Ipdata extends \yii\db\ActiveRecord
             [['icd10', 'icd9'], 'string', 'max' => 255],
             [['adjrw'], 'string', 'max' => 25],
             [['exsfile'], 'string', 'max' => 255],
+            [['refer_number'], 'string', 'max' => 50],
+            [['refertohospcode'], 'string', 'max' => 5],
+            [['sex'], 'in', 'range' => ['1', '2']],
+            [['p_age'], 'integer', 'min' => 0],
+            [['nation'], 'in', 'range' => ['048', '265', '056', '266', '046', '057', '264', '208']],
         ];
     }
 
@@ -76,6 +86,11 @@ class Ipdata extends \yii\db\ActiveRecord
             'costadjrw' => 'ค่ารักษาตาม Adj.RW',
             'FundHolderID' => 'รหัส รพ ที่ซื้อบัตร',
             'exsfile' => 'ชื่อไฟล์ excel ที่นำเข้าข้อมูล',
+            'refer_number' => 'เลขที่ Refer',
+            'refertohospcode' => 'รหัสหน่วยบริการที่ส่งต่อ',
+            'sex' => 'เพศ',
+            'p_age' => 'อายุ (ปี)',
+            'nation' => 'สัญชาติ',
         ];
     }
 }

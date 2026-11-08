@@ -1,43 +1,14 @@
 <?php
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
+use frontend\assets\CodeMirrorAsset;
 
 /* @var $this yii\web\View */
 /* @var $model frontend\models\SqlCode */
 /* @var $form yii\widgets\ActiveForm */
 
-// Load CodeMirror for SQL syntax highlighting
-$this->registerCssFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css');
-$this->registerCssFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/eclipse.min.css');
-$this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js', ['position' => \yii\web\View::POS_HEAD]);
-$this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js', ['position' => \yii\web\View::POS_HEAD, 'depends' => []]);
+CodeMirrorAsset::register($this);
 ?>
-<style>
-.CodeMirror {
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 15px;
-    line-height: 1.7;
-    border: 1.5px solid #bdbdbd;
-    border-radius: 4px;
-    min-height: 200px;
-    height: auto;
-}
-.CodeMirror-focused {
-    border-color: #66afe9;
-    box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102,175,233,.6);
-}
-.sql-label-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-}
-.sql-label-row label {
-    margin-bottom: 0;
-    font-weight: 700;
-    color: #31708f;
-}
-</style>
 <div class="sql-code-form">
     <?php $form = ActiveForm::begin(); ?>
     <div class="row">

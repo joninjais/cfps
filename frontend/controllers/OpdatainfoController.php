@@ -3,6 +3,7 @@
 namespace frontend\controllers;
 
 use Yii;
+use frontend\components\ExcelImportHeaders;
 use frontend\models\Opdata;
 use frontend\models\OpdatainfoSearch;
 use frontend\models\Fwfdatabase;
@@ -30,6 +31,7 @@ class OpdatainfoController extends BaseController
                 'class' => VerbFilter::class,
                 'actions' => [
                     'delete' => ['POST'],
+                    'import' => ['POST'],
                 ],
             ],
         ];
@@ -49,23 +51,19 @@ class OpdatainfoController extends BaseController
         if(!$checklogin){
             echo "<script>window.location='index.php?r=site/login';</script>";
         }
-        $data = Yii::$app->request->get();
-        $del = $data['del'] ?? '';
-        $chk = $data['chk'] ?? '';
+        // การลบ/ปรับปรุงข้อมูลเปลี่ยนแปลงข้อมูลจริง จึงรับเฉพาะ POST (มี CSRF) เท่านั้น
+        $request = Yii::$app->request;
+        $del = $request->isPost ? (string)$request->post('del', '') : '';
+        $chk = $request->isPost ? (string)$request->post('chk', '') : '';
+        $result = '';
 
         //ลบข้อมูล
-
         if($del==="deletedata"){
-
-        $sql = "
-        DELETE FROM `opdata` WHERE `opdata`.`hospcode` = ".$session['hoscode']."
-        ";
-        $query_del = Yii::$app->db->createCommand($sql)->execute();
-
-                    $result="ลบข้อมูลสำเร็จ";
-        }else{
-         
-            $result="ลบข้อมูลไม่สำเร็จ"; }
+            Yii::$app->db->createCommand()->delete('opdata', [
+                'hospcode' => (string)$session['hoscode'],
+            ])->execute();
+            $result="ลบข้อมูลสำเร็จ";
+        }
 
         // return $this->render('index', [
         //     'searchModel' => $searchModel,
@@ -238,22 +236,22 @@ class OpdatainfoController extends BaseController
                 ORDER BY x.dateserv DESC
                 ) as opdata_tmp
                 on opdata.opid = opdata_tmp.opid
-                    and opdata.hospcode = '$hospcode'
+                    and opdata.hospcode = :hospcode
                 set opdata.FundHolderID = opdata_tmp.fwf_FundHolderID
             ";
-            $query_update = Yii::$app->db->createCommand($sqlupdate)->execute();
-
-
-
-            }else{
-             
-                $result="ปรับปรุงข้อมูลไม่สำเร็จ"; }
+            Yii::$app->db->createCommand($sqlupdate, [':hospcode' => (string)$hospcode])->execute();
+            $result = "ปรับปรุงข้อมูลสำเร็จ";
+        }
     
-            return $this->render('index', [
-                'searchModel' => $searchModel,
-                'dataProvider' => $dataProvider,
-                'result' => $result,
-            ]);
+        if ($result !== '') {
+            $session->addFlash('success', $result);
+        }
+
+        return $this->render('index', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+            'result' => $result,
+        ]);
 /*
         return $this->render('index', [
             'searchModel' => $searchModel,
@@ -298,14 +296,16 @@ class OpdatainfoController extends BaseController
     {
         set_time_limit(0); // ไฟล์ใหญ่อาจใช้เวลานาน
 
-        $xlsid = Yii::$app->request->get();
-        $xlsid = $xlsid['id'] ?? '';
-
-        \Yii::$app->db->createCommand()->update(
-            'xlsfileuploads', ['startdatetime' => date('Y-m-d,h:i:s')], 'xlsid = ' . (int)$xlsid
-        )->execute();
+        $xlsid = (int)$id;
 
         $xlsdata = (new \yii\db\Query())->from('xlsfileuploads')->where(['xlsid' => $xlsid])->one();
+
+        // ไฟล์ต้องเป็นของหน่วยบริการที่ล็อกอินอยู่ (ยกเว้น 00064)
+        if (empty($xlsdata) || (!$this->isProvincialAdmin()
+            && trim((string)$xlsdata['hoscode']) !== trim((string)Yii::$app->session->get('hoscode')))) {
+            Yii::$app->session->addFlash('error', 'ไม่พบไฟล์ หรือไม่มีสิทธิ์นำเข้าไฟล์นี้');
+            return $this->redirect(['opdatainfo/index']);
+        }
 
         try {
             $file = Yii::getAlias('@webroot') . '/uploads/' . $xlsdata['exsfile'];
@@ -316,11 +316,27 @@ class OpdatainfoController extends BaseController
         }
 
         $sheet      = $objPHPExcel->getSheet(0);
+        $headerError = ExcelImportHeaders::validate($sheet, ExcelImportHeaders::OP);
+        if ($headerError !== null) {
+            Yii::$app->session->addFlash('error', $headerError);
+            return $this->redirect(['opdatainfo/index']);
+        }
+
+        \Yii::$app->db->createCommand()->update(
+            'xlsfileuploads', ['startdatetime' => date('Y-m-d H:i:s')], ['xlsid' => $xlsid]
+        )->execute();
+
         $highestRow = $sheet->getHighestRow();
         $highestCol = $sheet->getHighestColumn();
 
         // อ่านข้อมูล Excel ทั้งหมดครั้งเดียว (เร็วกว่าอ่านทีละแถวมาก)
         $sheetData = $sheet->rangeToArray('A2:' . $highestCol . $highestRow, null, true, false);
+
+        $colRefer    = 25;
+        $colReferTo  = 26;
+        $colSex      = 27;
+        $colAge      = 28;
+        $colNation   = 29;
 
         // หาแถวสุดท้ายที่ไม่ว่าง + เก็บ hospcode ที่ไม่ซ้ำกัน
         $lastIdx   = -1;
@@ -332,6 +348,32 @@ class OpdatainfoController extends BaseController
             }
         }
         if ($lastIdx < 0) {
+            return $this->redirect(['opdatainfo/index']);
+        }
+
+        // hospcode ในทุกแถวต้องตรงกับหน่วยบริการของผู้ใช้ (ยกเว้น 00064)
+        $ownErr = $this->checkImportOwnership($xlsdata, $hospcodes);
+        if ($ownErr !== null) {
+            Yii::$app->session->addFlash('error', $ownErr);
+            return $this->redirect(['opdatainfo/index']);
+        }
+
+        // --- ตรวจ nation ก่อนนำเข้า: ถ้ามีแถวที่ไม่อยู่ในรายการที่อนุญาต ไม่นำเข้าทั้งไฟล์ ---
+        $badNation = [];
+        for ($i = 0; $i <= $lastIdx; $i++) {
+            $row = $sheetData[$i];
+            if (empty($row[0]) || empty($row[6])) continue; // แถวที่จะถูกข้ามอยู่แล้ว (hospcode/seq ว่าง)
+            if ($this->normalizeNation($row[$colNation] ?? '') === null) {
+                $badNation[] = ($i + 2) . ' (' . trim((string)($row[$colNation] ?? '')) . ')';
+            }
+        }
+        if (!empty($badNation)) {
+            Yii::$app->session->addFlash('error',
+                'ไม่นำเข้าข้อมูล: พบค่า nation ที่ไม่ถูกต้องจำนวน ' . count($badNation)
+                . ' แถว (ค่าที่อนุญาต: ' . implode(', ', self::ALLOWED_NATIONS) . ') แถวที่: '
+                . implode(', ', array_slice($badNation, 0, 20))
+                . (count($badNation) > 20 ? ' ...' : '')
+            );
             return $this->redirect(['opdatainfo/index']);
         }
 
@@ -375,18 +417,20 @@ class OpdatainfoController extends BaseController
 
         $insertRows  = [];
         $deletePairs = []; // สำหรับลบแถว FundHolderID='ccccc'
+        $badDate     = [];
 
         for ($i = 0; $i <= $lastIdx; $i++) {
             $row = $sheetData[$i];
             if (empty($row[0])) continue;
 
             $hospcode = $row[0];
-            $raw = $row[1];
-            if (is_numeric($raw) && $raw > 1000) {
-                // Excel serial date (เช่น 46023) → แปลงผ่าน PhpSpreadsheet
-                $dateserv = date('Y-m-d', ExcelDate::excelToTimestamp((float)$raw));
-            } else {
-                $dateserv = date('Y-m-d', strtotime((string)$raw));
+            // แถวที่ถูกข้ามอยู่แล้ว (seq ว่าง) ไม่ต้องตรวจวันที่
+            if (empty($row[6])) continue;
+
+            $dateserv = $this->parseExcelDate($row[1]);
+            if ($dateserv === null) {
+                $badDate[] = ($i + 2) . ' (' . trim((string)$row[1]) . ')';
+                continue;
             }
             $name     = $row[2];
             $fund     = $row[3];
@@ -401,6 +445,18 @@ class OpdatainfoController extends BaseController
             }, $ms_raw);
             $alltotal = array_sum($ms);
 
+            // คอลัมน์ Z..AD: refer_number, refertohospcode, sex, p_age, nation (Y คือ alltotal ซึ่งระบบคำนวณเอง)
+            $refer_number    = trim((string)($row[$colRefer] ?? ''));
+            $refer_number    = $refer_number === '' ? null : mb_substr($refer_number, 0, 50);
+            $refertohospcode = trim((string)($row[$colReferTo] ?? ''));
+            $refertohospcode = $refertohospcode === '' ? null : mb_substr($refertohospcode, 0, 5);
+            $sex             = trim((string)($row[$colSex] ?? ''));
+            $sex             = in_array($sex, ['1', '2'], true) ? $sex : null;
+            $p_age           = str_replace(',', '', trim((string)($row[$colAge] ?? '')));
+            $p_age           = (is_numeric($p_age) && $p_age >= 0 && $p_age <= 65535) ? (int)$p_age : null;
+            // Excel อาจอ่านรหัสเป็นตัวเลข (48) จึงเติม 0 ข้างหน้าให้ครบ 3 หลัก
+            $nation          = $this->normalizeNation($row[$colNation] ?? '');
+
             if (empty($seq) || empty($hospcode)) continue;
 
             // --- หา FundHolderID จาก fwfMap แทนการ query ---
@@ -413,24 +469,8 @@ class OpdatainfoController extends BaseController
                     }
                 }
                 if (!empty($matched)) {
-                    $mt   = 0;
-                    $hosb = 'ccccc';
-                    foreach ($matched as $m) {
-                        $fhid = $m['FundHolderID'];
-                        if ($fhid == '10739' || $fhid == '10740') {
-                            $mt++;
-                        }
-                        // คงเงื่อนไขเดิม (operator precedence เหมือนต้นฉบับ)
-                        if ($mt < 2 && $fhid !== '10739' || $fhid !== '10740') {
-                            $hosb = $fhid;
-                        }
-                    }
-                    if ($mt >= 1) {
-                        $hosb = $matched[0]['FundHolderID'];
-                    }
-                    if (empty($hosb)) {
-                        $hosb = 'ccccc';
-                    }
+                    // ใช้กฎเดียวกับ IP: เลือกตัวแรกที่ไม่ใช่ 10739/10740
+                    $hosb = $this->pickFundHolderId($matched);
                 } else {
                     // ไม่มี period ที่ตรงกับวันบริการ (เช่น permit หมดอายุเล็กน้อย)
                     // ใช้ period ที่หมดอายุล่าสุดเป็น fallback
@@ -465,11 +505,22 @@ class OpdatainfoController extends BaseController
                 $ms[0],  $ms[1],  $ms[2],  $ms[3],  $ms[4],  $ms[5],  $ms[6],  $ms[7],
                 $ms[8],  $ms[9],  $ms[10], $ms[11], $ms[12], $ms[13], $ms[14], $ms[15],
                 $alltotal, $hosb, $xlsdata['exsfile'],
+                $refer_number, $refertohospcode, $sex, $p_age, $nation,
             ];
             $existingSet[$existKey] = true; // ป้องกัน duplicate ใน batch เดียวกัน
         }
 
+        if (!empty($badDate)) {
+            Yii::$app->session->addFlash('error',
+                'ไม่นำเข้าข้อมูล: พบวันที่รับบริการที่ว่างหรือไม่ถูกต้องจำนวน ' . count($badDate)
+                . ' แถว แถวที่: ' . implode(', ', array_slice($badDate, 0, 20))
+                . (count($badDate) > 20 ? ' ...' : '')
+            );
+            return $this->redirect(['opdatainfo/index']);
+        }
+
         $db          = Yii::$app->db;
+        $imported    = false;
         $transaction = $db->beginTransaction();
         try {
             // Batch delete 'ccccc' rows (จัดกลุ่มตาม hospcode ใช้ IN clause)
@@ -497,6 +548,7 @@ class OpdatainfoController extends BaseController
                     'm1','m2','m3','m4','m5','m6','m7','m8',
                     'm9','m10','m11','m12','m13','m14','m15','m16',
                     'alltotal','FundHolderID','exsfile',
+                    'refer_number','refertohospcode','sex','p_age','nation',
                 ];
                 foreach (array_chunk($insertRows, 500) as $chunk) {
                     $db->createCommand()->batchInsert('opdata', $columns, $chunk)->execute();
@@ -504,21 +556,25 @@ class OpdatainfoController extends BaseController
             }
 
             $transaction->commit();
-        } catch (\Exception $e) {
+            $imported = true;
+        } catch (\Throwable $e) {
             $transaction->rollBack();
             Yii::$app->session->addFlash('error', 'นำเข้าข้อมูลไม่สำเร็จ: ' . $e->getMessage());
         }
 
-        $db->createCommand()->update('xlsfileuploads',
-            ['enddatetime' => date('Y-m-d,h:i:s'), 'importstatus' => 1],
-            'xlsid = ' . (int)$xlsid
-        )->execute();
+        // บันทึกสถานะและอัปเดต op_pp_type เฉพาะเมื่อนำเข้าสำเร็จ
+        if ($imported) {
+            $db->createCommand()->update('xlsfileuploads',
+                ['enddatetime' => date('Y-m-d H:i:s'), 'importstatus' => 1],
+                ['xlsid' => $xlsid]
+            )->execute();
 
-        // อัปเดต op_pp_type สำหรับแถวที่นำเข้าจากไฟล์นี้
-        $db->createCommand(
-            'UPDATE opdata SET op_pp_type = fn_get_op_pp_type(icd10) WHERE exsfile = :exsfile',
-            [':exsfile' => $xlsdata['exsfile']]
-        )->execute();
+            // อัปเดต op_pp_type สำหรับแถวที่นำเข้าจากไฟล์นี้
+            $db->createCommand(
+                'UPDATE opdata SET op_pp_type = fn_get_op_pp_type(icd10) WHERE exsfile = :exsfile',
+                [':exsfile' => $xlsdata['exsfile']]
+            )->execute();
+        }
 
         return $this->redirect(['opdatainfo/index']);
     }    
