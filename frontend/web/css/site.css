@@ -1,0 +1,258 @@
+html,
+body {
+    height: 100%;
+}
+
+.wrap {
+    min-height: 100%;
+    height: auto;
+    margin: 0 auto -60px;
+    padding: 0 0 60px;
+}
+
+.wrap > .container {
+    padding: 70px 15px 20px;
+}
+
+.footer {
+    height: 60px;
+    background-color: #f5f5f5;
+    border-top: 1px solid #ddd;
+    padding-top: 20px;
+}
+
+.jumbotron {
+    text-align: center;
+    background-color: transparent;
+}
+
+.jumbotron .btn {
+    font-size: 21px;
+    padding: 14px 24px;
+}
+
+.not-set {
+    color: #c55;
+    font-style: italic;
+}
+
+/* add sorting icons to gridview sort links */
+a.asc:after, a.desc:after {
+    position: relative;
+    top: 1px;
+    display: inline-block;
+    font-family: 'Glyphicons Halflings';
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    padding-left: 5px;
+}
+
+a.asc:after {
+    content: "\e151";
+}
+
+a.desc:after {
+    content: "\e152";
+}
+
+.sort-numerical a.asc:after {
+    content: "\e153";
+}
+
+.sort-numerical a.desc:after {
+    content: "\e154";
+}
+
+.sort-ordinal a.asc:after {
+    content: "\e155";
+}
+
+.sort-ordinal a.desc:after {
+    content: "\e156";
+}
+
+.grid-view td {
+    white-space: nowrap;
+}
+
+.grid-view .filters input,
+.grid-view .filters select {
+    min-width: 50px;
+}
+
+.hint-block {
+    display: block;
+    margin-top: 5px;
+    color: #999;
+}
+
+.error-summary {
+    color: #a94442;
+    background: #fdf7f7;
+    border-left: 3px solid #eed3d7;
+    padding: 10px 20px;
+    margin: 0 0 15px 0;
+}
+
+/* align the logout "link" (button in form) of the navbar */
+.nav li > form > button.logout {
+    padding: 15px;
+    border: none;
+}
+
+@media(max-width:767px) {
+    .nav li > form > button.logout {
+        display:block;
+        text-align: left;
+        width: 100%;
+        padding: 10px 15px;
+    }
+}
+
+.nav > li > form > button.logout:focus,
+.nav > li > form > button.logout:hover {
+    text-decoration: none;
+}
+
+.nav > li > form > button.logout:focus {
+    outline: none;
+}
+
+.cfps-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.cfps-menu-card {
+    min-width: 0;
+    padding: 18px;
+    background: #fff;
+    border: 1px solid #e4ebe5;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(25, 75, 43, .06);
+}
+
+.cfps-menu-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #edf1ed;
+}
+
+.cfps-menu-heading-icon {
+    display: inline-flex;
+    flex: 0 0 42px;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    color: #267744;
+    background: #eaf5ed;
+    border-radius: 11px;
+    font-size: 18px;
+}
+
+.cfps-menu-heading h4 {
+    margin: 0 0 3px;
+    color: #244b32;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.cfps-menu-heading p {
+    margin: 0;
+    color: #78847b;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.cfps-menu-links {
+    display: grid;
+    gap: 6px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cfps-menu-links--columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cfps-menu-links a {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 54px;
+    padding: 8px 10px;
+    color: #30583b;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    line-height: 1.4;
+    transition: background-color .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+.cfps-menu-links a > .fa:first-child {
+    display: inline-flex;
+    flex: 0 0 34px;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    color: #2e7d48;
+    background: #f0f7f1;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+.cfps-menu-links a > span {
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.cfps-menu-links a small {
+    display: block;
+    margin-top: 2px;
+    color: #7a857d;
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.cfps-menu-links .cfps-menu-arrow {
+    margin-left: auto;
+    color: #9aa79d;
+}
+
+.cfps-menu-links a:hover {
+    color: #1d6035;
+    background: #f5faf6;
+    border-color: #d7e9dc;
+    text-decoration: none;
+    transform: translateX(2px);
+}
+
+.cfps-menu-links a:focus-visible {
+    outline: 3px solid rgba(46, 125, 72, .35);
+    outline-offset: 2px;
+    text-decoration: none;
+}
+
+@media (max-width: 767px) {
+    .cfps-menu-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .cfps-menu-links--columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cfps-menu-card {
+        padding: 14px;
+    }
+}

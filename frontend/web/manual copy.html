@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>คู่มือการใช้งาน — โปรแกรมเคลมต่างด้าว FWF พังงา</title>
+  <style>
+    :root {
+      --primary:  #1a6b3a;
+      --primary2: #27ae60;
+      --accent:   #009688;
+      --bg:       #f4f6f9;
+      --card:     #ffffff;
+      --border:   #d9e8df;
+      --text:     #2c3e50;
+      --muted:    #6c757d;
+      --danger:   #c0392b;
+      --warning:  #e67e22;
+      --info:     #2980b9;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', 'Prompt', 'Segoe UI', sans-serif;
+      font-size: 15px;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: #fff;
+      padding: 36px 48px 28px;
+      position: relative;
+    }
+    header h1 { font-size: 2rem; font-weight: 700; }
+    header p  { font-size: 1.05rem; opacity: .88; margin-top: 8px; }
+    header .version {
+      position: absolute; top: 20px; right: 40px;
+      background: rgba(255,255,255,.18);
+      border-radius: 20px; padding: 4px 16px;
+      font-size: .85rem;
+    }
+
+    /* ── Layout ── */
+    .container { display: flex; max-width: 1300px; margin: 0 auto; padding: 32px 20px; gap: 32px; }
+
+    /* ── Sidebar TOC ── */
+    nav.toc {
+      width: 270px; flex-shrink: 0;
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      padding: 20px 0;
+      align-self: flex-start;
+      position: sticky; top: 24px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+    nav.toc h2 { font-size: .9rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 0 20px 10px; }
+    nav.toc ul { list-style: none; }
+    nav.toc ul li a {
+      display: block; padding: 7px 20px;
+      font-size: .93rem; color: var(--text);
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    nav.toc ul li a:hover,
+    nav.toc ul li a.active {
+      background: #e8f5e9;
+      border-left-color: var(--primary2);
+      color: var(--primary);
+      text-decoration: none;
+    }
+    nav.toc ul.sub li a { padding-left: 36px; font-size: .88rem; color: var(--muted); }
+
+    /* ── Main content ── */
+    main { flex: 1; min-width: 0; }
+
+    section {
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      padding: 32px 36px;
+      margin-bottom: 28px;
+    }
+    section h2 {
+      font-size: 1.35rem; font-weight: 700;
+      color: var(--primary);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 10px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    section h3 { font-size: 1.05rem; font-weight: 700; margin: 22px 0 10px; color: #2c3e50; }
+    section p  { margin-bottom: 12px; }
+    section ul, section ol { margin: 10px 0 14px 20px; }
+    section li { margin-bottom: 6px; }
+
+    .icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+      background: var(--primary2); color: #fff;
+    }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-left: 4px solid;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px; margin: 16px 0;
+      font-size: .93rem;
+    }
+    .callout-info    { border-color: var(--info);    background: #ebf5fb; }
+    .callout-warning { border-color: var(--warning); background: #fef9e7; }
+    .callout-danger  { border-color: var(--danger);  background: #fdedec; }
+    .callout-success { border-color: var(--primary2);background: #eafaf1; }
+    .callout strong  { display: block; margin-bottom: 4px; }
+
+    /* ── Step boxes ── */
+    .steps { counter-reset: step; }
+    .step {
+      display: flex; gap: 14px;
+      margin-bottom: 16px;
+      align-items: flex-start;
+    }
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      flex-shrink: 0;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .85rem; margin-top: 2px;
+    }
+
+    /* ── Feature cards grid ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px; margin-top: 14px;
+    }
+    .feature-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      transition: box-shadow .2s;
+    }
+    .feature-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+    .feature-card .fc-icon {
+      font-size: 1.6rem; margin-bottom: 8px;
+    }
+    .feature-card h4 { font-size: .95rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+    .feature-card p  { font-size: .85rem; color: var(--muted); margin: 0; }
+
+    /* ── Table ── */
+    table.manual-table {
+      width: 100%; border-collapse: collapse;
+      font-size: .92rem; margin: 14px 0;
+    }
+    table.manual-table th {
+      background: var(--primary); color: #fff;
+      padding: 9px 12px; text-align: left;
+    }
+    table.manual-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    table.manual-table tr:nth-child(even) td { background: #f8fffe; }
+    table.manual-table tr:hover td { background: #e8f5e9; }
+
+    /* ── Keyboard key badge ── */
+    kbd {
+      background: #eee; border: 1px solid #ccc;
+      border-radius: 4px; padding: 2px 7px;
+      font-family: monospace; font-size: .85rem;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block; padding: 2px 10px;
+      border-radius: 12px; font-size: .78rem; font-weight: 600;
+    }
+    .badge-green  { background: #d4efdf; color: #1a6b3a; }
+    .badge-red    { background: #fad7d7; color: #c0392b; }
+    .badge-blue   { background: #d6eaf8; color: #2980b9; }
+    .badge-orange { background: #fdebd0; color: #e67e22; }
+
+    /* ── Screenshot placeholder ── */
+    .screen-placeholder {
+      background: #ecf0f1; border: 2px dashed #bdc3c7;
+      border-radius: 8px; padding: 24px;
+      text-align: center; color: var(--muted);
+      font-style: italic; margin: 14px 0;
+      font-size: .88rem;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 24px;
+      color: var(--muted); font-size: .88rem;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .container { flex-direction: column; }
+      nav.toc { width: 100%; position: static; max-height: none; }
+      header { padding: 24px 20px 18px; }
+      header h1 { font-size: 1.4rem; }
+      section { padding: 20px; }
+    }
+
+    /* ── Print ── */
+    @media print {
+      nav.toc, header .version { display: none; }
+      .container { display: block; }
+      section { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ HEADER -->
+<header>
+  <div class="version">เวอร์ชัน 1.0 | พ.ค. 2568</div>
+  <h1>📋 คู่มือการใช้งาน</h1>
+  <p>โปรแกรมเคลมต่างด้าว — Foreigner Work Fund (FWF) จังหวัดพังงา</p>
+</header>
+
+<div class="container">
+
+  <!-- ═══════════════════════════════════════════════ SIDEBAR TOC -->
+  <nav class="toc">
+    <h2>สารบัญ</h2>
+    <ul>
+      <li><a href="#overview">1. ภาพรวมระบบ</a></li>
+      <li><a href="#login">2. การเข้าสู่ระบบ</a></li>
+      <li><a href="#homepage">3. หน้าแรก</a></li>
+      <li><a href="#dashboard">4. Dashboard</a></li>
+      <li><a href="#fwf">5. ข้อมูล FWF</a></li>
+      <ul class="sub">
+        <li><a href="#fwf-database">5.1 FWF Database</a></li>
+        <li><a href="#fwf-health">5.2 FWF Health</a></li>
+        <li><a href="#fwf-fy-claim">5.3 Claim ตามปีงบประมาณ</a></li>
+      </ul>
+      <li><a href="#insurance">6. ข้อมูลกรมธรรม์</a></li>
+      <li><a href="#ipdata">7. ข้อมูลผู้ป่วยใน (IP)</a></li>
+      <li><a href="#opdata">8. ข้อมูลผู้ป่วยนอก (OP)</a></li>
+      <li><a href="#ppdata">9. ข้อมูล PP</a></li>
+      <li><a href="#ncd">10. ข้อมูล NCD</a></li>
+      <li><a href="#person">11. ข้อมูลบุคคล</a></li>
+      <li><a href="#deptor">12. ข้อมูลลูกหนี้</a></li>
+      <li><a href="#datacorrect">13. แก้ไขข้อมูล</a></li>
+      <li><a href="#upload">14. อัปโหลดข้อมูล</a></li>
+      <li><a href="#lockday">15. ล็อควันส่งข้อมูล</a></li>
+      <li><a href="#user">16. จัดการผู้ใช้งาน</a></li>
+      <li><a href="#faq">17. คำถามที่พบบ่อย</a></li>
+      <li><a href="#contact">18. ติดต่อสอบถาม</a></li>
+    </ul>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════ MAIN CONTENT -->
+  <main>
+
+    <!-- 1. ภาพรวม -->
+    <section id="overview">
+      <h2><span class="icon">🌐</span> 1. ภาพรวมระบบ</h2>
+      <p>
+        โปรแกรมเคลมต่างด้าว (Foreigner Work Fund) เป็นระบบบริหารจัดการข้อมูลการเบิกจ่ายกองทุน
+        แรงงานต่างด้าวในจังหวัดพังงา พัฒนาด้วย PHP Yii2 Framework เชื่อมต่อกับฐานข้อมูล
+        HospitalOS เพื่อรวบรวม วิเคราะห์ และรายงานข้อมูลผู้รับบริการแรงงานต่างด้าวครอบคลุม
+        ผู้ป่วยใน (IP) ผู้ป่วยนอก (OP) และบริการส่งเสริมป้องกัน (PP)
+      </p>
+      <h3>หน่วยบริการที่ใช้ระบบ</h3>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="fc-icon">🏥</div>
+          <h4>สสจ.พังงา (00064)</h4>
+          <p>ผู้ดูแลระบบ — เข้าถึงข้อมูลทุกหน่วยบริการ</p>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">🏨</div>
+          <h4>รพ.พังงา (PNG)</h4>
+          <p>โรงพยาบาลจังหวัด เข้าถึงข้อมูลเฉพาะหน่วยตนเอง</p>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">🏨</div>
+          <h4>รพ.ตะกั่วป่า (TKP)</h4>
+          <p>เข้าถึงข้อมูลเฉพาะหน่วยตนเอง</p>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">🏨</div>
+          <h4>รพ.สาย (SSJ) และอื่นๆ</h4>
+          <p>เข้าถึงข้อมูลเฉพาะหน่วยตนเอง</p>
+        </div>
+      </div>
+      <h3>คุณสมบัติหลักของระบบ</h3>
+      <ul>
+        <li>แสดงสรุปสถิติผู้รับบริการแรงงานต่างด้าว แยกตามกองทุนและหน่วยบริการ</li>
+        <li>บริหารจัดการข้อมูลกรมธรรม์และการเบิกกองทุน FWF</li>
+        <li>วิเคราะห์ข้อมูลผู้ป่วยในแยกตามปีงบประมาณ (Fiscal Year)</li>
+        <li>ติดตามข้อมูล NCD (เบาหวาน / ความดัน)</li>
+        <li>ส่งออกรายงาน Excel (.xlsx) และพิมพ์รายงาน</li>
+        <li>จัดการสิทธิ์ผู้ใช้งานตามหน่วยบริการ</li>
+      </ul>
+      <div class="callout callout-info">
+        <strong>ℹ️ ข้อกำหนดระบบ</strong>
+        รองรับเบราว์เซอร์ Google Chrome, Microsoft Edge, Firefox เวอร์ชันล่าสุด
+        แนะนำการใช้งานบนหน้าจอขนาด 1280×768 ขึ้นไป
+      </div>
+    </section>
+
+    <!-- 2. การเข้าสู่ระบบ -->
+    <section id="login">
+      <h2><span class="icon">🔐</span> 2. การเข้าสู่ระบบ</h2>
+      <p>เข้าสู่ระบบโดยเปิดเบราว์เซอร์และไปยัง URL ของระบบ จากนั้นป้อนข้อมูลเข้าสู่ระบบ</p>
+      <div class="steps">
+        <div class="step">เปิดเบราว์เซอร์และเข้าสู่ URL ที่ผู้ดูแลระบบแจ้งให้</div>
+        <div class="step">ป้อน <strong>ชื่อผู้ใช้ (Username)</strong> ในช่องแรก</div>
+        <div class="step">ป้อน <strong>รหัสผ่าน (Password)</strong> ในช่องที่สอง</div>
+        <div class="step">คลิกปุ่ม <strong>Login</strong> หรือกด <kbd>Enter</kbd></div>
+        <div class="step">ระบบจะนำไปยังหน้าแรกหากข้อมูลถูกต้อง</div>
+      </div>
+      <div class="callout callout-warning">
+        <strong>⚠️ ข้อควรระวัง</strong>
+        หากระบบแสดงข้อความ "Invalid username or password" กรุณาตรวจสอบตัวพิมพ์ใหญ่-เล็ก
+        หากลืมรหัสผ่านให้ติดต่อผู้ดูแลระบบ
+      </div>
+      <h3>การออกจากระบบ</h3>
+      <p>คลิกเมนู <strong>Logout</strong> ที่มุมขวาบนเสมอ เพื่อป้องกันการเข้าถึงข้อมูลโดยไม่ได้รับอนุญาต</p>
+    </section>
+
+    <!-- 3. หน้าแรก -->
+    <section id="homepage">
+      <h2><span class="icon">🏠</span> 3. หน้าแรก (Home)</h2>
+      <p>
+        หน้าแรกแสดงสรุปข้อมูลการรับบริการของแรงงานต่างด้าวในช่วงเวลาที่เลือก
+        แบ่งออกเป็น 3 ประเภทบริการ และแยกตามกองทุน
+      </p>
+      <h3>การกรองข้อมูลตามช่วงเวลา</h3>
+      <table class="manual-table">
+        <thead><tr><th>ปุ่ม / ช่อง</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td><strong>วันที่เริ่มต้น</strong></td><td>เลือกวันเริ่มต้นช่วงรายงาน (ปฏิทินไทย พ.ศ.)</td></tr>
+          <tr><td><strong>วันที่สิ้นสุด</strong></td><td>เลือกวันสิ้นสุดช่วงรายงาน</td></tr>
+          <tr><td><strong>ย้อนหลัง (Back)</strong></td><td>เลื่อนช่วงเวลาย้อนหลังหนึ่งช่วง</td></tr>
+          <tr><td><strong>ถัดไป (Forward)</strong></td><td>เลื่อนช่วงเวลาถัดไปหนึ่งช่วง</td></tr>
+          <tr><td><strong>ปีงบประมาณ</strong></td><td>เลือกดูข้อมูลรายปีงบประมาณ (ต.ค. – ก.ย.)</td></tr>
+        </tbody>
+      </table>
+      <h3>ตารางข้อมูลที่แสดง</h3>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="fc-icon">🛏</div>
+          <h4>ผู้ป่วยใน (IP)</h4>
+          <p>จำนวน Admit (AN), วันนอน (LOS), ค่าใช้จ่าย (Cost), AdjRW</p>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">🚶</div>
+          <h4>ผู้ป่วยนอก (OP)</h4>
+          <p>จำนวนครั้ง (SQ), ค่าใช้จ่ายรวม (AllTotal), ยอดเบิก (Claim)</p>
+        </div>
+        <div class="feature-card">
+          <div class="fc-icon">💉</div>
+          <h4>ส่งเสริมป้องกัน (PP)</h4>
+          <p>จำนวนครั้งบริการ PP แยกตามกองทุน</p>
+        </div>
+      </div>
+      <div class="callout callout-info">
+        <strong>ℹ️ การแสดงผลตามกองทุน</strong>
+        ข้อมูลแบ่งตาม FundHolderID: <strong>SSJ</strong> (สายบุรี), <strong>PNG</strong> (พังงา), <strong>TKP</strong> (ตะกั่วป่า)
+        และ <strong>All</strong> (รวมทุกกองทุน)
+      </div>
+    </section>
+
+    <!-- 4. Dashboard -->
+    <section id="dashboard">
+      <h2><span class="icon">📊</span> 4. Dashboard</h2>
+      <p>
+        Dashboard แสดงภาพรวมสถิติในรูปแบบกราฟและตารางสรุป เหมาะสำหรับการติดตาม
+        แนวโน้มและเปรียบเทียบข้อมูลระหว่างช่วงเวลา
+      </p>
+      <h3>องค์ประกอบของ Dashboard</h3>
+      <ul>
+        <li><strong>Summary Cards</strong> — แสดงตัวเลขสรุป IP / OP / PP พร้อมยอดรวม</li>
+        <li><strong>กราฟแนวโน้ม</strong> — เปรียบเทียบยอดรายเดือน/รายไตรมาส</li>
+        <li><strong>ตารางสรุปรายหน่วยบริการ</strong> — แสดงรายละเอียดแยกตามโรงพยาบาล</li>
+      </ul>
+      <h3>การกรองข้อมูล</h3>
+      <div class="steps">
+        <div class="step">เลือกช่วงวันที่ต้องการในแบบฟอร์มด้านบน</div>
+        <div class="step">คลิกปุ่ม <strong>ค้นหา</strong> เพื่อโหลดข้อมูลใหม่</div>
+        <div class="step">ข้อมูลกราฟและตารางจะอัปเดตตามช่วงที่เลือก</div>
+      </div>
+      <div class="callout callout-success">
+        <strong>✅ เคล็ดลับ</strong>
+        ผู้ใช้งาน สสจ. (รหัส 00064) สามารถดูข้อมูลรวมทุกหน่วยบริการในจังหวัดได้
+        ผู้ใช้งานโรงพยาบาลจะเห็นเฉพาะข้อมูลของหน่วยตนเอง
+      </div>
+    </section>
+
+    <!-- 5. ข้อมูล FWF -->
+    <section id="fwf">
+      <h2><span class="icon">💼</span> 5. ข้อมูล FWF (กองทุนแรงงานต่างด้าว)</h2>
+
+      <h3 id="fwf-database">5.1 FWF Database</h3>
+      <p>
+        จัดเก็บข้อมูลหลักของแรงงานต่างด้าวที่ซื้อกองทุน FWF ประกอบด้วย CID,
+        ช่วงวันคุ้มครอง, รหัสหน่วยบริการ, และราคาบัตร
+      </p>
+      <table class="manual-table">
+        <thead><tr><th>ฟิลด์</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td>CID</td><td>เลขบัตรประจำตัวแรงงานต่างด้าว</td></tr>
+          <tr><td>FundHolderID</td><td>รหัสหน่วยบริการที่ถือกองทุน</td></tr>
+          <tr><td>PeriodStartDate</td><td>วันที่เริ่มต้นความคุ้มครอง</td></tr>
+          <tr><td>PeriodEndDate</td><td>วันที่สิ้นสุดความคุ้มครอง</td></tr>
+          <tr><td>card_price</td><td>ราคาบัตร (บาท)</td></tr>
+          <tr><td>timeregis</td><td>วันที่ลงทะเบียนข้อมูล</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="fwf-health">5.2 FWF Health / FWF Health Client / FWF Health MS</h3>
+      <p>
+        แสดงข้อมูลสุขภาพของแรงงานต่างด้าวที่เชื่อมต่อกับระบบ FWF Health
+        แยกเป็น 3 มุมมอง: ข้อมูลกลาง (Health), ข้อมูลลูกค้า (Client), และข้อมูล Master (MS)
+      </p>
+      <ul>
+        <li><strong>FWF Health</strong> — สรุปข้อมูลสุขภาพรายบุคคล</li>
+        <li><strong>FWF Health Client</strong> — ข้อมูลแรงงานต่างด้าวฝั่งผู้รับบริการ</li>
+        <li><strong>FWF Health MS</strong> — ข้อมูลหลักสำหรับจัดการ</li>
+      </ul>
+
+      <h3 id="fwf-fy-claim">5.3 กองทุน Claim ตามปีงบประมาณ (FWF FY Claim)</h3>
+      <p>
+        คำนวณและแสดงยอด Claim แยกตามปีงบประมาณไทย (ต.ค. – ก.ย.)
+        จากข้อมูล FWF Database โดยคำนวณสัดส่วนวันคุ้มครองที่ตกอยู่ในแต่ละปีงบประมาณ
+      </p>
+      <h4>การนำเข้าข้อมูล (Import)</h4>
+      <div class="steps">
+        <div class="step">ไปที่เมนู <strong>FWF FY Claim</strong></div>
+        <div class="step">คลิกปุ่ม <span class="badge badge-blue">นำเข้าข้อมูล (Import)</span></div>
+        <div class="step">ยืนยันการนำเข้าในกล่องยืนยัน (ระบบจะไม่นำข้อมูลซ้ำ)</div>
+        <div class="step">รอจนระบบแสดงข้อความสำเร็จ</div>
+      </div>
+      <h4>การส่งออก Excel</h4>
+      <ol>
+        <li>เลือกตัวกรองปีงบประมาณ (FY) หรือหน่วยบริการ (ถ้าต้องการ)</li>
+        <li>คลิกปุ่ม <span class="badge badge-green">ส่งออก Excel (.xlsx)</span></li>
+        <li>ไฟล์ Excel จะมี 2 sheet: ข้อมูล Record และสรุปรายหน่วยบริการ</li>
+      </ol>
+      <div class="callout callout-danger">
+        <strong>⛔ คำเตือน — ปุ่มลบข้อมูล</strong>
+        ปุ่ม "ล้างข้อมูลทั้งหมด" จะลบข้อมูลทุกแถวในตาราง FY Claim
+        <strong>ไม่สามารถกู้คืนได้</strong> กรุณาใช้ด้วยความระมัดระวัง
+      </div>
+    </section>
+
+    <!-- 6. กรมธรรม์ -->
+    <section id="insurance">
+      <h2><span class="icon">📄</span> 6. ข้อมูลกรมธรรม์ (Insurance Policies)</h2>
+      <p>
+        บริหารจัดการข้อมูลกรมธรรม์ประกันสุขภาพของแรงงานต่างด้าว
+        นำเข้าจากไฟล์ Excel ที่ได้รับจาก FDH (Foreign Direct Health)
+      </p>
+      <h3>เมนูหลัก</h3>
+      <table class="manual-table">
+        <thead><tr><th>เมนู</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td>Dashboard</td><td>สรุปการซื้อกรมธรรม์แยกตามราคา พร้อมกราฟแสดงผล</td></tr>
+          <tr><td>รายการกรมธรรม์</td><td>ตารางข้อมูลกรมธรรม์ทั้งหมด พร้อมฟังก์ชันค้นหาและกรอง</td></tr>
+          <tr><td>นำเข้าจาก Excel</td><td>อัปโหลดไฟล์ .xlsx จาก FDH</td></tr>
+        </tbody>
+      </table>
+      <h3>การนำเข้าข้อมูลกรมธรรม์จาก Excel</h3>
+      <div class="steps">
+        <div class="step">ไปที่หน้า <strong>ข้อมูลกรมธรรม์</strong></div>
+        <div class="step">คลิกปุ่ม <strong>นำเข้าข้อมูล</strong></div>
+        <div class="step">เลือกไฟล์ Excel (.xlsx) ที่ได้รับจาก FDH</div>
+        <div class="step">คลิก <strong>อัปโหลด</strong> และรอผลการนำเข้า</div>
+        <div class="step">ตรวจสอบจำนวนแถวที่นำเข้าสำเร็จ</div>
+      </div>
+      <div class="callout callout-warning">
+        <strong>⚠️ รูปแบบไฟล์</strong>
+        ไฟล์ Excel ต้องมีคอลัมน์ตรงตามแม่แบบที่กำหนด มิฉะนั้นระบบจะแจ้ง Error
+      </div>
+    </section>
+
+    <!-- 7. IP -->
+    <section id="ipdata">
+      <h2><span class="icon">🛏</span> 7. ข้อมูลผู้ป่วยใน (Inpatient — IP)</h2>
+      <p>
+        แสดงและวิเคราะห์ข้อมูลการรับรักษาแบบผู้ป่วยใน (Admit) ของแรงงานต่างด้าว
+        แบ่งเป็น 3 ส่วน
+      </p>
+      <table class="manual-table">
+        <thead><tr><th>เมนู</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td><strong>IPA</strong> (IP All)</td><td>ข้อมูลผู้ป่วยในรวมทุกกลุ่ม — แสดงรายการ AN, LOS, Cost, AdjRW</td></tr>
+          <tr><td><strong>IPC</strong> (IP CCCCC)</td><td>ข้อมูลผู้ป่วยในที่มี FundHolderID = 'ccccc' (กลุ่มพิเศษ)</td></tr>
+          <tr><td><strong>IP Data Info</strong></td><td>ข้อมูลรายละเอียดเพิ่มเติมของผู้ป่วยใน</td></tr>
+        </tbody>
+      </table>
+      <h3>คอลัมน์ข้อมูลสำคัญ</h3>
+      <ul>
+        <li><strong>AN</strong> — เลขที่การรับไว้ (Admission Number)</li>
+        <li><strong>HN</strong> — เลขประวัติผู้ป่วย</li>
+        <li><strong>CID</strong> — เลขบัตรประจำตัว</li>
+        <li><strong>Admit Date / Discharge Date</strong> — วันรับ/วันจำหน่าย</li>
+        <li><strong>LOS</strong> — จำนวนวันนอน (Length of Stay)</li>
+        <li><strong>ICD10</strong> — รหัสวินิจฉัยหลัก</li>
+        <li><strong>ICD9</strong> — รหัสหัตถการ</li>
+        <li><strong>Cost</strong> — ค่าใช้จ่ายจริง (บาท)</li>
+        <li><strong>AdjRW</strong> — น้ำหนักสัมพัทธ์ปรับแล้ว</li>
+        <li><strong>CostAdjRW</strong> — ค่าใช้จ่ายตาม AdjRW (คำนวณที่ 8,600 บาท/RW)</li>
+      </ul>
+    </section>
+
+    <!-- 8. OP -->
+    <section id="opdata">
+      <h2><span class="icon">🚶</span> 8. ข้อมูลผู้ป่วยนอก (Outpatient — OP)</h2>
+      <p>
+        แสดงและวิเคราะห์ข้อมูลการรับบริการแบบผู้ป่วยนอก
+      </p>
+      <table class="manual-table">
+        <thead><tr><th>เมนู</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td><strong>OPA</strong> (OP All)</td><td>ข้อมูลผู้ป่วยนอกรวม — จำนวนครั้ง, ค่าใช้จ่าย, ยอดเบิก</td></tr>
+          <tr><td><strong>OPC</strong> (OP CCCCC)</td><td>ข้อมูลผู้ป่วยนอกกลุ่ม ccccc</td></tr>
+          <tr><td><strong>OP Data Info</strong></td><td>รายละเอียดเพิ่มเติมของผู้ป่วยนอก</td></tr>
+        </tbody>
+      </table>
+      <h3>คอลัมน์สำคัญ</h3>
+      <ul>
+        <li><strong>SQ</strong> — จำนวนครั้งบริการ (Sequence)</li>
+        <li><strong>AllTotal</strong> — ค่าใช้จ่ายรวมทุกรายการ (บาท)</li>
+        <li><strong>Claim</strong> — ยอดเบิกกองทุน (บาท)</li>
+        <li><strong>ICD10</strong> — รหัสวินิจฉัยหลัก</li>
+        <li><strong>Visit Date</strong> — วันที่รับบริการ</li>
+      </ul>
+    </section>
+
+    <!-- 9. PP -->
+    <section id="ppdata">
+      <h2><span class="icon">💉</span> 9. ข้อมูลบริการส่งเสริมป้องกัน (PP)</h2>
+      <p>
+        บันทึกและรายงานบริการส่งเสริมสุขภาพและป้องกันโรค เช่น ฝากครรภ์, ฉีดวัคซีน,
+        ตรวจสุขภาพประจำปี ของแรงงานต่างด้าว
+      </p>
+      <table class="manual-table">
+        <thead><tr><th>เมนู</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td><strong>PPA</strong></td><td>บริการ PP รวมทุกกลุ่ม — จำนวนครั้งและยอดเบิก</td></tr>
+          <tr><td><strong>PPC</strong></td><td>บริการ PP กลุ่ม ccccc</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info">
+        <strong>ℹ️ กลุ่มรหัส ICD10 ที่นับเป็น PP</strong>
+        Z34, Z13, Z35, Z30, Z31, Z32, Z33, Z39, Z364, Z37, Z21, Z232, Z240,
+        Z244, Z245, Z271, Z246, Z251, Z274, Z273, Z11, Z10, Z298, Z001, Z115, U119
+      </div>
+    </section>
+
+    <!-- 10. NCD -->
+    <section id="ncd">
+      <h2><span class="icon">🩺</span> 10. ข้อมูล NCD (โรคไม่ติดต่อเรื้อรัง)</h2>
+      <p>
+        ติดตามข้อมูลผู้ป่วยแรงงานต่างด้าวที่เป็นโรคเบาหวาน (DM) และความดันโลหิตสูง (HT)
+      </p>
+      <table class="manual-table">
+        <thead><tr><th>เมนู</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td><strong>NCD DM</strong></td><td>ข้อมูลผู้ป่วยเบาหวาน (Diabetes Mellitus) — รายชื่อ, ค่า HbA1c, วันที่รับบริการ</td></tr>
+          <tr><td><strong>NCD HT</strong></td><td>ข้อมูลผู้ป่วยความดันโลหิตสูง (Hypertension) — รายชื่อ, ค่า BP, วันที่รับบริการ</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 11. Person -->
+    <section id="person">
+      <h2><span class="icon">👤</span> 11. ข้อมูลบุคคล (Person)</h2>
+      <p>
+        จัดการข้อมูลทะเบียนบุคคลของแรงงานต่างด้าวที่ขึ้นทะเบียนในระบบ
+      </p>
+      <ul>
+        <li>ค้นหาข้อมูลบุคคลด้วย CID, ชื่อ, หรือรหัสหน่วยบริการ</li>
+        <li>ดูประวัติการรับบริการ IP/OP/PP ของแต่ละบุคคล</li>
+        <li>ตรวจสอบสถานะกองทุน FWF ที่เชื่อมกับบุคคล</li>
+      </ul>
+    </section>
+
+    <!-- 12. Deptor -->
+    <section id="deptor">
+      <h2><span class="icon">💰</span> 12. ข้อมูลลูกหนี้ (Deptor)</h2>
+      <p>
+        ติดตามรายการค้างชำระและข้อมูลลูกหนี้ของแรงงานต่างด้าวในระบบ
+      </p>
+      <ul>
+        <li>แสดงรายการที่มียอดค้างชำระ</li>
+        <li>กรองข้อมูลตามช่วงเวลาและหน่วยบริการ</li>
+        <li>ส่งออกรายงานลูกหนี้เป็น Excel</li>
+      </ul>
+    </section>
+
+    <!-- 13. แก้ไขข้อมูล -->
+    <section id="datacorrect">
+      <h2><span class="icon">✏️</span> 13. แก้ไขข้อมูล (Data Correct)</h2>
+      <p>
+        แก้ไขข้อมูลที่ไม่ถูกต้องในระบบ รองรับทั้งข้อมูลทั่วไปและข้อมูลโรคเรื้อรัง
+      </p>
+      <table class="manual-table">
+        <thead><tr><th>เมนู</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Data Correct</strong></td><td>แก้ไขข้อมูลทั่วไป เช่น CID, ชื่อ, วันที่</td></tr>
+          <tr><td><strong>DC Chronic</strong></td><td>แก้ไขข้อมูลผู้ป่วยโรคเรื้อรัง</td></tr>
+          <tr><td><strong>Del Person</strong></td><td>ลบข้อมูลบุคคลออกจากระบบ</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-danger">
+        <strong>⛔ คำเตือน</strong>
+        การลบข้อมูลบุคคล (Del Person) จะลบข้อมูลทั้งหมดที่เกี่ยวข้อง
+        <strong>ไม่สามารถกู้คืนได้</strong> กรุณาตรวจสอบให้ถูกต้องก่อนดำเนินการ
+      </div>
+    </section>
+
+    <!-- 14. อัปโหลด -->
+    <section id="upload">
+      <h2><span class="icon">📤</span> 14. อัปโหลดข้อมูล</h2>
+      <p>ระบบรองรับการนำเข้าข้อมูลผ่านไฟล์ 2 รูปแบบ</p>
+      <table class="manual-table">
+        <thead><tr><th>ฟีเจอร์</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Easy Upload</strong></td><td>อัปโหลดข้อมูลอย่างง่าย สำหรับไฟล์รูปแบบมาตรฐาน</td></tr>
+          <tr><td><strong>XLS File Uploads</strong></td><td>อัปโหลดไฟล์ Excel ขนาดใหญ่ รองรับหลายชีต</td></tr>
+        </tbody>
+      </table>
+      <h3>ขั้นตอนการอัปโหลดไฟล์</h3>
+      <div class="steps">
+        <div class="step">เลือกเมนูการอัปโหลดที่ต้องการ</div>
+        <div class="step">คลิกปุ่ม <strong>เลือกไฟล์ (Browse/Choose File)</strong></div>
+        <div class="step">เลือกไฟล์ .xlsx หรือ .csv จากเครื่องของคุณ</div>
+        <div class="step">คลิกปุ่ม <strong>อัปโหลด</strong> และรอผลการนำเข้า</div>
+        <div class="step">ตรวจสอบรายงานผลว่านำเข้าสำเร็จหรือมี Error</div>
+      </div>
+      <div class="callout callout-warning">
+        <strong>⚠️ ขนาดไฟล์สูงสุด</strong>
+        ไฟล์อัปโหลดต้องมีขนาดไม่เกิน 20 MB สำหรับ Easy Upload
+        และ 50 MB สำหรับ XLS File Uploads
+      </div>
+    </section>
+
+    <!-- 15. ล็อควัน -->
+    <section id="lockday">
+      <h2><span class="icon">🔒</span> 15. ล็อควันส่งข้อมูล (Lock Sent Day)</h2>
+      <p>
+        กำหนดวันปิดรับข้อมูลของแต่ละเดือน เพื่อป้องกันการแก้ไขข้อมูลย้อนหลัง
+        หลังจากส่งข้อมูลให้สำนักงาน
+      </p>
+      <ul>
+        <li>เลือกเดือน/ปีที่ต้องการล็อค</li>
+        <li>คลิกปุ่ม <strong>ล็อค</strong> เพื่อปิดการแก้ไขข้อมูลในช่วงนั้น</li>
+        <li>ผู้ดูแลระบบ (สสจ.) สามารถปลดล็อคได้หากจำเป็น</li>
+      </ul>
+      <div class="callout callout-info">
+        <strong>ℹ️ สิทธิ์การล็อค</strong>
+        เฉพาะผู้ดูแลระบบระดับจังหวัด (สสจ. รหัส 00064) เท่านั้นที่สามารถล็อคและปลดล็อคได้
+      </div>
+    </section>
+
+    <!-- 16. จัดการผู้ใช้ -->
+    <section id="user">
+      <h2><span class="icon">👥</span> 16. จัดการผู้ใช้งาน (User Management)</h2>
+      <p>
+        ผู้ดูแลระบบ (Administrator) สามารถเพิ่ม แก้ไข และปิดใช้งานบัญชีผู้ใช้ได้
+      </p>
+      <h3>สิทธิ์ผู้ใช้งาน</h3>
+      <table class="manual-table">
+        <thead><tr><th>ระดับสิทธิ์</th><th>คำอธิบาย</th><th>การเข้าถึงข้อมูล</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-red">Admin (สสจ.)</span></td>
+            <td>ผู้ดูแลระบบระดับจังหวัด (รหัส 00064)</td>
+            <td>เข้าถึงข้อมูลทุกหน่วยบริการ + ฟังก์ชันพิเศษ</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">Hospital User</span></td>
+            <td>เจ้าหน้าที่โรงพยาบาล</td>
+            <td>เข้าถึงเฉพาะข้อมูลของหน่วยบริการตนเอง</td>
+          </tr>
+        </tbody>
+      </table>
+      <h3>การเพิ่มผู้ใช้ใหม่</h3>
+      <div class="steps">
+        <div class="step">ไปที่เมนู <strong>User Management</strong> (เฉพาะ Admin)</div>
+        <div class="step">คลิกปุ่ม <strong>สร้างผู้ใช้ใหม่</strong></div>
+        <div class="step">กรอกชื่อผู้ใช้, รหัสผ่าน, และรหัสหน่วยบริการ (hoscode)</div>
+        <div class="step">คลิก <strong>บันทึก</strong></div>
+      </div>
+      <h3>การเปลี่ยนรหัสผ่าน</h3>
+      <div class="steps">
+        <div class="step">คลิกที่ชื่อผู้ใช้ของคุณที่มุมขวาบน</div>
+        <div class="step">เลือก <strong>โปรไฟล์ (Profile)</strong></div>
+        <div class="step">กรอกรหัสผ่านใหม่ในช่อง "New Password" และยืนยัน</div>
+        <div class="step">คลิก <strong>บันทึก</strong></div>
+      </div>
+    </section>
+
+    <!-- 17. FAQ -->
+    <section id="faq">
+      <h2><span class="icon">❓</span> 17. คำถามที่พบบ่อย (FAQ)</h2>
+
+      <h3>Q: ไม่สามารถเข้าสู่ระบบได้ ทำอย่างไร?</h3>
+      <p>
+        ตรวจสอบว่าชื่อผู้ใช้และรหัสผ่านถูกต้อง คำนึงถึงตัวพิมพ์ใหญ่-เล็ก
+        หากยังเข้าไม่ได้ ติดต่อผู้ดูแลระบบเพื่อรีเซ็ตรหัสผ่าน
+      </p>
+
+      <h3>Q: ข้อมูลแสดงไม่ครบ ควรทำอย่างไร?</h3>
+      <p>
+        ตรวจสอบช่วงวันที่ที่เลือก และกดปุ่ม "ค้นหา" ใหม่
+        ถ้ายังไม่พบข้อมูล อาจเป็นเพราะข้อมูลยังไม่ได้ถูกนำเข้าในช่วงนั้น
+      </p>
+
+      <h3>Q: ไฟล์ Excel นำเข้าไม่สำเร็จ ทำอย่างไร?</h3>
+      <p>
+        ตรวจสอบว่าไฟล์อยู่ในรูปแบบ .xlsx ไม่ใช่ .xls
+        และคอลัมน์ตรงตามที่กำหนด ลองเปิดไฟล์ใน Excel แล้วบันทึกใหม่เป็น .xlsx
+      </p>
+
+      <h3>Q: ดาวน์โหลด Excel รายงานแล้วตัวเลขไม่ตรงกับหน้าจอ?</h3>
+      <p>
+        ตรวจสอบว่าได้ใช้ตัวกรองเดียวกันทั้งบนหน้าจอและปุ่มดาวน์โหลด
+        ค่าตัวกรองจะถูกส่งไปกับการดาวน์โหลดโดยอัตโนมัติ
+      </p>
+
+      <h3>Q: ระบบช้า หรือหน้าเว็บโหลดนาน?</h3>
+      <p>
+        ช่วงข้อมูลที่ใหญ่มาก (เช่น ทั้งปีงบประมาณ) อาจใช้เวลาโหลดนานกว่าปกติ
+        ลองแบ่งช่วงเวลาให้เล็กลง หรือติดต่อผู้ดูแลระบบหากปัญหาเกิดขึ้นบ่อย
+      </p>
+
+      <h3>Q: ลืมรหัสผ่านทำอย่างไร?</h3>
+      <p>
+        ติดต่อผู้ดูแลระบบ (สสจ.พังงา) เพื่อขอรีเซ็ตรหัสผ่าน
+        ระบบไม่รองรับการรีเซ็ตรหัสผ่านด้วยตัวเองผ่านอีเมล
+      </p>
+    </section>
+
+    <!-- 18. ติดต่อ -->
+    <section id="contact">
+      <h2><span class="icon">📞</span> 18. ติดต่อสอบถาม</h2>
+      <p>หากพบปัญหาในการใช้งานระบบ กรุณาติดต่อ</p>
+      <table class="manual-table">
+        <thead><tr><th>ช่องทาง</th><th>รายละเอียด</th></tr></thead>
+        <tbody>
+          <tr><td>หน่วยงาน</td><td>สำนักงานสาธารณสุขจังหวัดพังงา (สสจ.พังงา)</td></tr>
+          <tr><td>ผู้ดูแลระบบ</td><td>กลุ่มงานเทคโนโลยีสารสนเทศ</td></tr>
+          <tr><td>เวลาทำการ</td><td>วันจันทร์ – ศุกร์ เวลา 08:30 – 16:30 น.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-success">
+        <strong>✅ ก่อนติดต่อ กรุณาเตรียมข้อมูล</strong>
+        <ol style="margin-top:8px;">
+          <li>ชื่อผู้ใช้งานและหน่วยบริการของคุณ</li>
+          <li>คำอธิบายปัญหาที่พบอย่างละเอียด</li>
+          <li>ภาพหน้าจอ (Screenshot) แสดงข้อผิดพลาด (ถ้ามี)</li>
+          <li>วันและเวลาที่เกิดปัญหา</li>
+        </ol>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ FOOTER -->
+<footer>
+  <p>คู่มือการใช้งาน โปรแกรมเคลมต่างด้าว FWF พังงา &nbsp;|&nbsp; จัดทำโดย สสจ.พังงา &nbsp;|&nbsp; พิมพ์ล่าสุด: พ.ค. 2568</p>
+</footer>
+
+<!-- ── Highlight active TOC link on scroll ── -->
+<script>
+  (function () {
+    var sections = document.querySelectorAll('section[id]');
+    var links    = document.querySelectorAll('nav.toc a[href^="#"]');
+
+    function activate() {
+      var scrollY = window.scrollY + 100;
+      var active  = sections[0];
+      sections.forEach(function (s) {
+        if (s.offsetTop <= scrollY) active = s;
+      });
+      links.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + active.id);
+      });
+    }
+
+    window.addEventListener('scroll', activate, { passive: true });
+    activate();
+  })();
+</script>
+
+</body>
+</html>

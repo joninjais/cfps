@@ -1,0 +1,80 @@
+สร้าง store PROCEDURE
+
+--------------------------------------------
+
+DELIMITER //
+
+CREATE PROCEDURE InsertIntoFWFDatabase()
+BEGIN
+    INSERT INTO fwfdatabase 
+        (PeriodID, PeriodStartDate, PeriodEndDate, CID, FundHolderID, fname, lname, timeregis, regisdate, exsfile)
+    SELECT DISTINCT
+        pt.PeriodID,
+        pt.PeriodStartDate,
+        pt.PeriodEndDate,
+        rt.CID,
+        rt.FundHolderID,
+        rt.fname,
+        rt.lname,
+        rt.period_name AS timeregis,
+        rt.RegistrationDate AS regisdate,
+        NOW() AS exsfile
+    FROM registrationtbl_tmp rt
+    INNER JOIN periodtbl_tmp pt ON pt.PeriodID = rt.PeriodID
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM fwfdatabase fwf
+        WHERE fwf.CID = rt.CID 
+          AND fwf.PeriodStartDate = pt.PeriodStartDate
+          AND fwf.PeriodEndDate = pt.PeriodEndDate
+          AND fwf.FundHolderID = rt.FundHolderID
+    );
+END //
+
+DELIMITER ;
+
+
+--------------------------------------------
+
+
+
+ประเด็นปรับปรุง
+บัตรหมดอายุแล้วใช้ต่อได้ 1 เดือน
+เพิ่มอันดับโรค
+แยกเพศ
+ข้อมูลหญิงตั้งครรภ์ จับกับ icd10 ...
+รายงาน OP ค่าใช้จ่ายเกิน 700 รายหน่วยบริการ สสจ.ดูทั้งหมด
+ข้อมูล ส่งต่อ ต่างจังหวัด จาก สสจ.
+ข้อมูลที่มีค่าใช้จ่ายเกิน 10,000 รายหน่วยบริการ สสจ.ดูทั้งหมด
+เพิ่มระบบนำเข้า user ด้วยไฟล์ excel
+
+เพิ่ม colums ทั้ง 2 ตาราง opdata และ ipdata ต่อท้าย
+refer_number = เก็บเลขที่ refer
+refertohospcode = รหัสหน่วยบริการที่ส่งต่อ
+sex = 1 = ชาย, 2 = หญิง
+p_age = อายุเป็นปี
+
+ถ้า
+
+
+ตรวจสอบหัวตารางในไฟล์ excel ก่อนนำเข้า ของ opdata และ ipdata ต้องตรงกับที่กำหนดดังนี้
+หัวตารางต้องอยู่แถวที่ 1 ชื่อและลำดับต้องตรงทุกคอลัมน์ รวมตัวพิมพ์เล็ก/ใหญ่ ห้ามมีหัวคอลัมน์เพิ่มเติม
+ตาราง opdata
+hospcode | dateserv | name | fund | cid | hn | seq | icd10 | m1 | m2 | m3 | m4 | m5 | m6 | m7 | m8 | m9 | m10 | m11 | m12 | m13 | m14 | m15 | m16 | alltotal | refer_number | refertohospcode | sex | p_age | nation
+
+ตาราง ipdata
+hospcode | admitdate | dischartdate | name | fund | cid | hn | an | icd10 | icd9 | los | cost | adjrw | costadjrw | refer_number | refertohospcode | sex | p_age | nation
+
+
+
+ค่าของ nation = 048, 265, 056, 266, 046, 057, 264 ตรวจก่อนนำเข้า ทั้ง OpdatainfoController และ IpdatainfoController 
+หัวตารางของไฟล์ excel ที่นำเข้าต้องตรงกับตารางในฐานข้อมูล
+
+รหัสโรงพยาบาลใหม่
+
+แนวทางการพัฒนาต่อ
+เปลี่ยนสถาปัตยกรรมเป็น Hybrid (API + Modern Frontend)
+เปลี่ยนระบบไปเป็น Headless API
+เก็บระบบ Yii2 เดิมไว้ทำหน้าที่เป็น RESTful API (เพราะ Yii2 ทำ API ได้ดีและเสถียรมาก)
+เขียนฝั่งหน้าบ้าน (Frontend) ใหม่ด้วย Framework ยอดนิยมในยุคนี้ เช่น Next.js (React) หรือ Nuxt (Vue)
+วิธีแก้เรื่อง Kartik Grid/Export: ในฝั่ง Frontend สมัยใหม่มี Library จัดการตารางและ Export ที่ทรงพลังกว่า Kartik มาก เช่น TanStack Table (React Table) หรือ DataTables ซึ่งสามารถดึงข้อมูล JSON จาก Yii2 API มาแสดงผล ทำ Filter, Sort และ Export ฝั่ง Client ได้อย่างรวดเร็วโดยไม่เปลืองแรงเซิร์ฟเวอร์

@@ -1,0 +1,249 @@
+/* ================================================================
+   CF PS – Custom Theme (replaces AdminLTE visual style)
+   Base font: 16px  |  Font: Sarabun (Thai-friendly)
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+/* ── Root & Base ─────────────────────────────────────────────── */
+:root {
+  --cfps-primary:   #1a237e;
+  --cfps-primary2:  #283593;
+  --cfps-accent:    #00897b;
+  --cfps-bg:        #eef1f8;
+  --cfps-card-bg:   #ffffff;
+  --cfps-border:    #dde3ef;
+  --cfps-text:      #263238;
+  --cfps-muted:     #607d8b;
+  --cfps-shadow:    0 2px 12px rgba(26,35,126,.10);
+  --cfps-radius:    10px;
+}
+
+html, body {
+  font-size:   16px !important;
+  font-family: 'Sarabun', 'Prompt', Tahoma, 'Helvetica Neue', Arial, sans-serif !important;
+  color:       var(--cfps-text) !important;
+  background:  var(--cfps-bg)  !important;
+}
+
+/* ── Top Navbar ──────────────────────────────────────────────── */
+.main-header {
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  position: relative;
+  z-index: 1000;
+}
+.main-header .navbar {
+  background: linear-gradient(90deg, var(--cfps-primary) 0%, var(--cfps-primary2) 60%, #1565c0 100%) !important;
+  border: none !important;
+  min-height: 54px;
+}
+.main-header .navbar .navbar-brand {
+  color: #fff !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  padding: 10px 20px;
+  letter-spacing: .3px;
+}
+.main-header .navbar .navbar-brand:hover { color: #e8eaf6 !important; }
+.main-header .navbar .navbar-nav > li > a {
+  color: rgba(255,255,255,.92) !important;
+  font-size: 1rem !important;
+  font-weight: 500;
+  padding: 15px 14px;
+}
+.main-header .navbar .navbar-nav > li > a:hover,
+.main-header .navbar .navbar-nav > li.active > a {
+  background: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+}
+.main-header .navbar .navbar-nav > li > a .fa,
+.main-header .navbar .navbar-nav > li > a .glyphicon {
+  margin-right: 4px;
+}
+.main-header .logo {
+  background: var(--cfps-primary) !important;
+  border-bottom: none !important;
+  font-size: 1rem !important;
+}
+/* Remove default AdminLTE skinning */
+.skin-green .main-header .navbar,
+.skin-green-light .main-header .navbar { /* overridden above */ }
+
+/* ── Content Wrapper ─────────────────────────────────────────── */
+.content-wrapper {
+  background: var(--cfps-bg) !important;
+  min-height: calc(100vh - 54px - 52px) !important;
+  margin-top: 0 !important;
+}
+.content-wrapper > .content {
+  padding: 18px 20px 24px !important;
+}
+section.content-header {
+  padding: 12px 20px 6px !important;
+  background: transparent;
+}
+
+/* ── Box / Card ──────────────────────────────────────────────── */
+.box {
+  border-radius: var(--cfps-radius) !important;
+  border: 1px solid var(--cfps-border) !important;
+  box-shadow: var(--cfps-shadow) !important;
+  margin-bottom: 18px !important;
+  background: var(--cfps-card-bg) !important;
+}
+.box-header {
+  border-radius: var(--cfps-radius) var(--cfps-radius) 0 0 !important;
+  padding: 12px 18px !important;
+}
+.box-header.with-border {
+  border-bottom: 1px solid rgba(255,255,255,.18) !important;
+}
+.box-header .box-title {
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+}
+.box-body {
+  padding: 16px 18px !important;
+  font-size: 1rem !important;
+}
+.box-footer {
+  background: #f8f9fc !important;
+  border-top: 1px solid var(--cfps-border);
+  border-radius: 0 0 var(--cfps-radius) var(--cfps-radius) !important;
+}
+
+/* Box collapse/tool buttons */
+.box .box-tools .btn-box-tool {
+  color: rgba(255,255,255,.80) !important;
+  font-size: 1rem !important;
+}
+.box .box-tools .btn-box-tool:hover { color: #fff !important; }
+
+/* ── Tables ──────────────────────────────────────────────────── */
+.table {
+  font-size: 1rem !important;
+  color: var(--cfps-text) !important;
+}
+.table > thead > tr > th {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  vertical-align: middle !important;
+  padding: 9px 12px !important;
+  border-bottom: 2px solid var(--cfps-border) !important;
+}
+.table > tbody > tr > td {
+  font-size: 1rem !important;
+  padding: 7px 12px !important;
+  vertical-align: middle !important;
+}
+.table-striped > tbody > tr:nth-of-type(odd) { background: #f7f9fd; }
+.table-hover > tbody > tr:hover { background: #eef3ff !important; }
+.table-bordered { border-color: #cdd5e0 !important; }
+.table-bordered > thead > tr > th,
+.table-bordered > tbody > tr > td { border-color: #cdd5e0 !important; }
+
+/* ── Forms ───────────────────────────────────────────────────── */
+.form-control {
+  font-size: 1rem !important;
+  border-radius: 6px !important;
+  border-color: #b0bec5 !important;
+  height: 38px !important;
+  color: var(--cfps-text) !important;
+}
+.form-control:focus {
+  border-color: var(--cfps-primary2) !important;
+  box-shadow: 0 0 0 2px rgba(40,53,147,.18) !important;
+}
+.input-group-addon {
+  background: #f3f5fb !important;
+  border-color: #b0bec5 !important;
+  font-size: 1rem !important;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  font-size: 1rem !important;
+  border-radius: 6px !important;
+  font-family: inherit !important;
+}
+.btn-primary {
+  background: var(--cfps-primary) !important;
+  border-color: var(--cfps-primary) !important;
+}
+.btn-primary:hover { background: var(--cfps-primary2) !important; }
+.btn-success {
+  background: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+}
+.btn-success:hover { background: #1b5e20 !important; }
+.btn-default {
+  background: #fff !important;
+  border-color: #b0bec5 !important;
+  color: var(--cfps-text) !important;
+}
+.btn-default:hover {
+  background: #e8eaf6 !important;
+  border-color: var(--cfps-primary2) !important;
+  color: var(--cfps-primary) !important;
+}
+
+/* ── Alerts ──────────────────────────────────────────────────── */
+.alert { font-size: 1rem !important; border-radius: 8px !important; }
+
+/* ── Breadcrumb ──────────────────────────────────────────────── */
+.breadcrumb {
+  background: transparent !important;
+  font-size: 0.95rem !important;
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.main-footer {
+  background: var(--cfps-primary) !important;
+  color: rgba(255,255,255,.88) !important;
+  border-top: none !important;
+  font-size: 0.92rem !important;
+  padding: 14px 20px !important;
+}
+.main-footer a { color: #90caf9 !important; }
+.main-footer a:hover { color: #fff !important; }
+.main-footer .pull-right { color: rgba(255,255,255,.70) !important; font-size: 0.88rem !important; }
+
+/* ── Login page ──────────────────────────────────────────────── */
+.login-page {
+  background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #1565c0 100%) !important;
+}
+.login-box-body {
+  border-radius: var(--cfps-radius) !important;
+  font-size: 1rem !important;
+}
+.login-box-body .form-control { font-size: 1rem !important; }
+.login-box-msg { font-size: 1.1rem !important; }
+.login-logo a { color: #fff !important; font-size: 1.2rem !important; font-weight: 700 !important; }
+
+/* ── Labels & Badges ─────────────────────────────────────────── */
+.label, .badge {
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+}
+
+/* ── Section heading fix ─────────────────────────────────────── */
+h1 { font-size: 1.5rem !important; }
+h2 { font-size: 1.3rem !important; }
+h3 { font-size: 1.15rem !important; }
+h4 { font-size: 1.05rem !important; }
+h5 { font-size: 1rem !important; }
+h6 { font-size: 0.95rem !important; }
+
+/* ── Animations / Utility ────────────────────────────────────── */
+.box { transition: box-shadow .2s; }
+.box:hover { box-shadow: 0 4px 18px rgba(26,35,126,.16) !important; }
+
+/* ── Scrollbars (Chrome) ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: #e8ecf4; }
+::-webkit-scrollbar-thumb { background: #9fa8c7; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--cfps-primary2); }
