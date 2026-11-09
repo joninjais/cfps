@@ -9,6 +9,7 @@ use frontend\models\Ipdata;
 use frontend\models\IpdataSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\UploadedFile;
 use yii\filters\VerbFilter;
 use yii\data\ArrayDataProvider;
 use yii\data\ActiveDataProvider;
@@ -86,28 +87,27 @@ class XlsfileuploadsController extends BaseController
     {
         $model = new Xlsfileuploads();
 
-        if ($model->load(Yii::$app->request->post()) && $model->validate() ) {
-            $model->exsfile = $model->upload($model,'exsfile');
-            $model->uploaddatetime = date('Y-m-d H:i:s');
-            // $uploaddatetime = date('Y-m-d H:i:s'); 
-            if($model->exsfile){
-                $model->save();
-            }   
-            else{
-                return $this->render('create', [
-                    'model' => $model,
-                ]);
-            }        
-
-            return $this->redirect([
-                'view', 'id' => $model->xlsid
-
-            ]);
-        } else {
-            return $this->render('create', [
-                'model' => $model,
-            ]);
+        if ($model->load(Yii::$app->request->post())) {
+            $model->exsfile = UploadedFile::getInstance($model, 'exsfile');
+            if ($model->exsfile === null) {
+                $model->addError('exsfile', 'กรุณาเลือกไฟล์ Excel');
+            } elseif ($model->validate()) {
+                $uploadedFile = $model->upload($model, 'exsfile');
+                if ($uploadedFile === false) {
+                    $model->addError('exsfile', 'ไม่สามารถอัปโหลดไฟล์ได้ กรุณาลองอีกครั้ง');
+                } else {
+                    $model->exsfile = $uploadedFile;
+                    $model->uploaddatetime = date('Y-m-d H:i:s');
+                    if ($model->save(false)) {
+                        return $this->redirect(['view', 'id' => $model->xlsid]);
+                    }
+                    Yii::error('ไม่สามารถบันทึกข้อมูลไฟล์อัปโหลดได้', __METHOD__);
+                    $model->addError('exsfile', 'อัปโหลดไฟล์แล้ว แต่ไม่สามารถบันทึกรายการไฟล์ได้ กรุณาติดต่อผู้ดูแลระบบ');
+                }
+            }
         }
+
+        return $this->render('create', ['model' => $model]);
     }
    
     /**
@@ -121,7 +121,9 @@ class XlsfileuploadsController extends BaseController
     {
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+        if ($model->load(Yii::$app->request->post())
+            && $model->validate(['user', 'hoscode', 'typefileupload'])
+            && $model->save(false, ['user', 'hoscode', 'typefileupload'])) {
             return $this->redirect(['view', 'id' => $model->xlsid]);
         }
 

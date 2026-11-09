@@ -40,7 +40,8 @@ class Xlsfileuploads extends \yii\db\ActiveRecord
             [['typefileupload'], 'string', 'max' => 50],
             [['exsfile'], 'file',
             'skipOnEmpty' => true,
-            'extensions' => 'xls,xlsx'
+            'extensions' => 'xls,xlsx',
+            'wrongExtension' => 'กรุณาเลือกไฟล์ Excel นามสกุล .xls หรือ .xlsx',
             ],
         ];
     }

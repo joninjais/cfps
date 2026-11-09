@@ -26,6 +26,13 @@ if (in_array(Yii::$app->controller->action->id, ['login', 'change-password'])) {
         'depends' => ['dmstr\web\AdminLteAsset'],
         'position' => \yii\web\View::POS_END,
     ]);
+    if (Yii::$app->controller->id === 'site' && Yii::$app->controller->action->id === 'index') {
+        $dashboardCssPath = Yii::getAlias('@webroot/css/site-dashboard.css');
+        $this->registerCssFile('@web/css/site-dashboard.css?v=' . filemtime($dashboardCssPath), [
+            'depends' => ['dmstr\web\AdminLteAsset'],
+            'position' => \yii\web\View::POS_END,
+        ]);
+    }
     $directoryAsset = Yii::$app->assetManager->getPublishedUrl('@vendor/almasaeed2010/adminlte/dist');
     ?>
     <?php $this->beginPage() ?>

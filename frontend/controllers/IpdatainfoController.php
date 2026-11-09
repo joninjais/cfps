@@ -3,6 +3,7 @@
 namespace frontend\controllers;
 
 use Yii;
+use frontend\components\ExcelImportHeaders;
 use frontend\models\Ipdata;
 use frontend\models\IpdatainfoSearch;
 use frontend\models\Fwfdatabase;
@@ -29,6 +30,8 @@ class IpdatainfoController extends BaseController
                 'class' => VerbFilter::class,
                 'actions' => [
                     'delete' => ['POST'],
+                    'import' => ['POST'],
+                    'reprocess-ccccc' => ['POST'],
                 ],
             ],
         ];
@@ -46,68 +49,33 @@ class IpdatainfoController extends BaseController
         $session = Yii::$app->session;
         $checklogin = User::findOne(['user'=>$session['user'],]);
 
-        $data = Yii::$app->request->get();
-        $del = $data['del'] ?? '';
-        $chk = $data['chk'] ?? '';
+        // การลบ/ปรับปรุงข้อมูลเปลี่ยนแปลงข้อมูลจริง จึงรับเฉพาะ POST (มี CSRF) เท่านั้น
+        $request = Yii::$app->request;
+        $del = $request->isPost ? (string)$request->post('del', '') : '';
+        $chk = $request->isPost ? (string)$request->post('chk', '') : '';
+        $result = '';
 
         //ลบข้อมูล
-        if($del==="deletedata"){
+        if ($del === "deletedata") {
+            Yii::$app->db->createCommand()->delete('ipdata', [
+                'hospcode' => (string)$session['hoscode'],
+            ])->execute();
+            $result = "ลบข้อมูลสำเร็จ";
+        }
 
-        $sql = "
-        DELETE FROM `ipdata` WHERE `ipdata`.`hospcode` = ".$session['hoscode']."
-        ";
-        $query_del = Yii::$app->db->createCommand($sql)->execute();
+        //ปรับปรุงข้อมูล: ใช้ตรรกะเดียวกับ reprocess-ccccc เพื่อให้ผลตรงกับตอนนำเข้า
+        if ($chk === "checkdata") {
+            $hospcode = trim((string)$session['hoscode']);
+            if ($hospcode !== '') {
+                [$updated, $still] = $this->reprocessHospital($hospcode);
+                $result = 'ปรับปรุงข้อมูลสำเร็จ: ' . $updated . ' รายการ, ยังเป็น ccccc ' . $still . ' รายการ';
+            }
+        }
 
-                    $result="ลบข้อมูลสำเร็จ";
-        }else{
-         
-            $result="ลบข้อมูลไม่สำเร็จ"; }
+        if ($result !== '') {
+            $session->addFlash('success', $result);
+        }
 
-        //ปรับปรุงข้อมูล
-        if($chk==="checkdata"){
-
-            // $sql = "
-            // SELECT * FROM opdata WHERE opdata.FundHolderID='ccccc'
-            // ";
-            // $query = Yii::$app->db->createCommand($sql)->execute();
-
-            $session = Yii::$app->session;
-            $useriofo = User::findOne(['user'=>$session['user'],]);
-            $hospcode = $session['hoscode'];
-            // $query=ipdata::findall(['hospcode'=>$useriofo['hoscode'],'FundHolderID'=>'ccccc' ]);            
-            // $result=$query;
-
-            $sqlupdate = "
-            UPDATE ipdata
-            INNER JOIN
-            (
-            SELECT
-            fwfdatabase.PeriodStartDate,fwfdatabase.PeriodEndDate,ipdata.*,fwfdatabase.FundHolderID as fwf_FundHolderID
-            FROM
-            ipdata
-            INNER JOIN fwfdatabase on  
-                        -- ipdata.cid = fwfdatabase.CID
-                        find_in_set( ipdata.cid, fwfdatabase.CID )
-                        AND STR_TO_DATE( ipdata.admitdate, '%Y-%m-%d' ) BETWEEN fwfdatabase.PeriodStartDate and fwfdatabase.PeriodEndDate
-                        and ipdata.icd10 <> ''
-            WHERE
-            (ipdata.FundHolderID = 'ccccc'
-            or ipdata.FundHolderID = ''
-            )
-           -- and LENGTH(ipdata.fund) = 5
-            and ipdata.icd10 NOT IN ('', '{}')
-            ORDER BY ipdata.admitdate desc
-            ) as ipdata_tmp
-            on ipdata.ipid = ipdata_tmp.ipid
-            and ipdata.hospcode = '$hospcode'
-            set ipdata.FundHolderID = ipdata_tmp.fwf_FundHolderID
-            ";
-            $query_update = Yii::$app->db->createCommand($sqlupdate)->execute();
-
-            }else{
-             
-                $result="ปรับปรุงข้อมูลไม่สำเร็จ"; }            
-            
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
@@ -150,14 +118,16 @@ class IpdatainfoController extends BaseController
     {
         set_time_limit(0);
 
-        $xlsid = Yii::$app->request->get();
-        $xlsid = $xlsid['id'] ?? '';
-
-        \Yii::$app->db->createCommand()->update(
-            'xlsfileuploads', ['startdatetime' => date('Y-m-d,h:i:s')], 'xlsid = ' . (int)$xlsid
-        )->execute();
+        $xlsid = (int)$id;
 
         $xlsdata = (new \yii\db\Query())->from('xlsfileuploads')->where(['xlsid' => $xlsid])->one();
+
+        // ไฟล์ต้องเป็นของหน่วยบริการที่ล็อกอินอยู่ (ยกเว้น 00064)
+        if (empty($xlsdata) || (!$this->isProvincialAdmin()
+            && trim((string)$xlsdata['hoscode']) !== trim((string)Yii::$app->session->get('hoscode')))) {
+            Yii::$app->session->addFlash('error', 'ไม่พบไฟล์ หรือไม่มีสิทธิ์นำเข้าไฟล์นี้');
+            return $this->redirect(['ipdatainfo/index']);
+        }
 
         try {
             $file = Yii::getAlias('@webroot') . '/uploads/' . $xlsdata['exsfile'];
@@ -168,11 +138,27 @@ class IpdatainfoController extends BaseController
         }
 
         $sheet      = $objPHPExcel->getSheet(0);
+        $headerError = ExcelImportHeaders::validate($sheet, ExcelImportHeaders::IP);
+        if ($headerError !== null) {
+            Yii::$app->session->addFlash('error', $headerError);
+            return $this->redirect(['ipdatainfo/index']);
+        }
+
+        \Yii::$app->db->createCommand()->update(
+            'xlsfileuploads', ['startdatetime' => date('Y-m-d H:i:s')], ['xlsid' => $xlsid]
+        )->execute();
+
         $highestRow = $sheet->getHighestRow();
         $highestCol = $sheet->getHighestColumn();
 
         // อ่าน Excel ทั้งหมดครั้งเดียว
         $sheetData = $sheet->rangeToArray('A2:' . $highestCol . $highestRow, null, true, false);
+
+        $colRefer    = 14;
+        $colReferTo  = 15;
+        $colSex      = 16;
+        $colAge      = 17;
+        $colNation   = 18;
 
         // หาแถวสุดท้ายที่ไม่ว่าง + เก็บ hospcode ที่ไม่ซ้ำกัน
         $lastIdx   = -1;
@@ -184,6 +170,32 @@ class IpdatainfoController extends BaseController
             }
         }
         if ($lastIdx < 0) {
+            return $this->redirect(['ipdatainfo/index']);
+        }
+
+        // hospcode ในทุกแถวต้องตรงกับหน่วยบริการของผู้ใช้ (ยกเว้น 00064)
+        $ownErr = $this->checkImportOwnership($xlsdata, $hospcodes);
+        if ($ownErr !== null) {
+            Yii::$app->session->addFlash('error', $ownErr);
+            return $this->redirect(['ipdatainfo/index']);
+        }
+
+        // --- ตรวจ nation ก่อนนำเข้า: ถ้ามีแถวที่ไม่อยู่ในรายการที่อนุญาต ไม่นำเข้าทั้งไฟล์ ---
+        $badNation = [];
+        for ($i = 0; $i <= $lastIdx; $i++) {
+            $row = $sheetData[$i];
+            if (empty($row[0]) || empty(trim((string)$row[7]))) continue; // แถวที่จะถูกข้ามอยู่แล้ว (hospcode/an ว่าง)
+            if ($this->normalizeNation($row[$colNation] ?? '') === null) {
+                $badNation[] = ($i + 2) . ' (' . trim((string)($row[$colNation] ?? '')) . ')';
+            }
+        }
+        if (!empty($badNation)) {
+            Yii::$app->session->addFlash('error',
+                'ไม่นำเข้าข้อมูล: พบค่า nation ที่ไม่ถูกต้องจำนวน ' . count($badNation)
+                . ' แถว (ค่าที่อนุญาต: ' . implode(', ', self::ALLOWED_NATIONS) . ') แถวที่: '
+                . implode(', ', array_slice($badNation, 0, 20))
+                . (count($badNation) > 20 ? ' ...' : '')
+            );
             return $this->redirect(['ipdatainfo/index']);
         }
 
@@ -226,20 +238,23 @@ class IpdatainfoController extends BaseController
 
         $insertRows  = [];
         $deletePairs = [];
+        $badDate     = [];
 
         for ($i = 0; $i <= $lastIdx; $i++) {
             $row = $sheetData[$i];
             if (empty($row[0])) continue;
 
             $hospcode     = trim((string)$row[0]);
-            $raw1 = $row[1];
-            $admitdate    = (is_numeric($raw1) && $raw1 > 1000)
-                ? date('Y-m-d', ExcelDate::excelToTimestamp((float)$raw1))
-                : date('Y-m-d', strtotime((string)$raw1));
-            $raw2 = $row[2];
-            $dischartdate = (is_numeric($raw2) && $raw2 > 1000)
-                ? date('Y-m-d', ExcelDate::excelToTimestamp((float)$raw2))
-                : date('Y-m-d', strtotime((string)$raw2));
+
+            // แถวที่ถูกข้ามอยู่แล้ว (an ว่าง) ไม่ต้องตรวจวันที่
+            if (empty(trim((string)$row[7]))) continue;
+
+            $admitdate    = $this->parseExcelDate($row[1]);
+            $dischartdate = $this->parseExcelDate($row[2]);
+            if ($admitdate === null || $dischartdate === null) {
+                $badDate[] = ($i + 2) . ' (' . trim((string)$row[1]) . ' / ' . trim((string)$row[2]) . ')';
+                continue;
+            }
             $name         = $row[3];
             $fund         = $row[4];
             $cid          = trim((string)$row[5]);
@@ -251,6 +266,18 @@ class IpdatainfoController extends BaseController
             $cost         = (float)str_replace(',', '', (string)$row[11]);
             $adjrw        = (float)str_replace(',', '', (string)$row[12]);
             $costadjrw    = $adjrw * 8600;
+
+            // คอลัมน์ O..S: refer_number, refertohospcode, sex, p_age, nation
+            $refer_number    = trim((string)($row[$colRefer] ?? ''));
+            $refer_number    = $refer_number === '' ? null : mb_substr($refer_number, 0, 50);
+            $refertohospcode = trim((string)($row[$colReferTo] ?? ''));
+            $refertohospcode = $refertohospcode === '' ? null : mb_substr($refertohospcode, 0, 5);
+            $sex             = trim((string)($row[$colSex] ?? ''));
+            $sex             = in_array($sex, ['1', '2'], true) ? $sex : null;
+            $p_age           = str_replace(',', '', trim((string)($row[$colAge] ?? '')));
+            $p_age           = (is_numeric($p_age) && $p_age >= 0 && $p_age <= 65535) ? (int)$p_age : null;
+            // Excel อาจอ่านรหัสเป็นตัวเลข (48) จึงเติม 0 ข้างหน้าให้ครบ 3 หลัก
+            $nation          = $this->normalizeNation($row[$colNation] ?? '');
 
             if (empty($an) || empty($hospcode)) continue;
 
@@ -273,11 +300,22 @@ class IpdatainfoController extends BaseController
                 $hospcode, $admitdate, $dischartdate, $name, $fund,
                 $cid, $hn, $an, $icd10, $icd9, $los, $cost,
                 $adjrw, $costadjrw, $hosb, $xlsdata['exsfile'],
+                $refer_number, $refertohospcode, $sex, $p_age, $nation,
             ];
             $existingSet[$existKey] = true;
         }
 
+        if (!empty($badDate)) {
+            Yii::$app->session->addFlash('error',
+                'ไม่นำเข้าข้อมูล: พบวันที่ admit/จำหน่ายที่ว่างหรือไม่ถูกต้องจำนวน ' . count($badDate)
+                . ' แถว แถวที่: ' . implode(', ', array_slice($badDate, 0, 20))
+                . (count($badDate) > 20 ? ' ...' : '')
+            );
+            return $this->redirect(['ipdatainfo/index']);
+        }
+
         $db          = Yii::$app->db;
+        $imported    = false;
         $transaction = $db->beginTransaction();
         try {
             // Batch delete 'ccccc' rows
@@ -304,6 +342,7 @@ class IpdatainfoController extends BaseController
                     'hospcode', 'admitdate', 'dischartdate', 'name', 'fund',
                     'cid', 'hn', 'an', 'icd10', 'icd9', 'los', 'cost',
                     'adjrw', 'costadjrw', 'FundHolderID', 'exsfile',
+                    'refer_number', 'refertohospcode', 'sex', 'p_age', 'nation',
                 ];
                 foreach (array_chunk($insertRows, 500) as $chunk) {
                     $db->createCommand()->batchInsert('ipdata', $columns, $chunk)->execute();
@@ -311,23 +350,25 @@ class IpdatainfoController extends BaseController
             }
 
             $transaction->commit();
-        } catch (\Exception $e) {
+            $imported = true;
+        } catch (\Throwable $e) {
             $transaction->rollBack();
             Yii::$app->session->addFlash('error', 'นำเข้าข้อมูลไม่สำเร็จ: ' . $e->getMessage());
         }
 
-        $db->createCommand()->update('xlsfileuploads',
-            ['enddatetime' => date('Y-m-d,h:i:s'), 'importstatus' => 1],
-            'xlsid = ' . (int)$xlsid
-        )->execute();
+        // บันทึกสถานะเฉพาะเมื่อนำเข้าสำเร็จ
+        if ($imported) {
+            $db->createCommand()->update('xlsfileuploads',
+                ['enddatetime' => date('Y-m-d H:i:s'), 'importstatus' => 1],
+                ['xlsid' => $xlsid]
+            )->execute();
+        }
 
         return $this->redirect(['ipdatainfo/index']);
     } 
 
     public function actionReprocessCcccc()
     {
-        set_time_limit(0);
-
         $session = Yii::$app->session;
         $hoscode = trim((string)$session['hoscode']);
         if ($hoscode === '') {
@@ -335,53 +376,78 @@ class IpdatainfoController extends BaseController
             return $this->redirect(['ipdatainfo/index']);
         }
 
+        try {
+            [$updated, $stillCcccc, $found] = $this->reprocessHospital($hoscode);
+        } catch (\Throwable $e) {
+            $session->addFlash('error', 'reprocess ไม่สำเร็จ: ' . $e->getMessage());
+            return $this->redirect(['ipdatainfo/index']);
+        }
+
+        if (!$found) {
+            $session->addFlash('info', 'ไม่พบข้อมูล FundHolderID = ccccc สำหรับหน่วยบริการนี้');
+        } else {
+            $session->addFlash('success', 'reprocess สำเร็จ: ปรับปรุง ' . $updated . ' รายการ, ยังเป็น ccccc ' . $stillCcccc . ' รายการ');
+        }
+        return $this->redirect(['ipdatainfo/index']);
+    }
+
+    /**
+     * คำนวณ FundHolderID ใหม่ของแถว ccccc/ว่าง ของหน่วยบริการเดียว ด้วยตรรกะเดียวกับตอนนำเข้า
+     * จัดกลุ่ม ipid ตาม FundHolderID ใหม่ แล้ว UPDATE ครั้งละไม่เกิน 500 รายการต่อกลุ่ม
+     * คืน [จำนวนที่ปรับปรุง, จำนวนที่ยังเป็น ccccc, พบแถวหรือไม่]
+     */
+    private function reprocessHospital(string $hoscode): array
+    {
+        set_time_limit(0);
+
         $fwfMap = $this->loadFwfMap();
         $rows = (new \yii\db\Query())
-            ->select(['ipid', 'hospcode', 'admitdate', 'cid', 'adjrw'])
+            ->select(['ipid', 'admitdate', 'cid', 'adjrw'])
             ->from('ipdata')
             ->where(['hospcode' => $hoscode])
             ->andWhere(['or', ['FundHolderID' => 'ccccc'], ['FundHolderID' => '']])
             ->all();
 
         if (empty($rows)) {
-            $session->addFlash('info', 'ไม่พบข้อมูล FundHolderID = ccccc สำหรับหน่วยบริการนี้');
-            return $this->redirect(['ipdatainfo/index']);
+            return [0, 0, false];
         }
 
-        $updated = 0;
+        $groups = [];
         $stillCcccc = 0;
-        $transaction = Yii::$app->db->beginTransaction();
-        try {
-            foreach ($rows as $row) {
-                $newFundHolderId = $this->resolveFundHolderId(
-                    $row['cid'] ?? '',
-                    $row['admitdate'] ?? '',
-                    $row['adjrw'] ?? null,
-                    $fwfMap
-                );
-
-                if ($newFundHolderId === 'ccccc' || $newFundHolderId === null || $newFundHolderId === '') {
-                    $stillCcccc++;
-                    continue;
-                }
-
-                Yii::$app->db->createCommand()->update(
-                    'ipdata',
-                    ['FundHolderID' => $newFundHolderId],
-                    ['ipid' => $row['ipid']]
-                )->execute();
-                $updated++;
+        $updated = 0;
+        $db = Yii::$app->db;
+        foreach ($rows as $row) {
+            $new = $this->resolveFundHolderId(
+                $row['cid'] ?? '',
+                $row['admitdate'] ?? '',
+                $row['adjrw'] ?? null,
+                $fwfMap
+            );
+            if ($new === 'ccccc' || $new === '') {
+                $stillCcccc++;
+                continue;
             }
+            $groups[$new][] = $row['ipid'];
+        }
 
+        $transaction = $db->beginTransaction();
+        try {
+            foreach ($groups as $fhid => $ipids) {
+                foreach (array_chunk($ipids, 500) as $chunk) {
+                    $updated += $db->createCommand()->update(
+                        'ipdata',
+                        ['FundHolderID' => (string)$fhid],
+                        ['and', ['hospcode' => $hoscode], ['ipid' => $chunk]]
+                    )->execute();
+                }
+            }
             $transaction->commit();
         } catch (\Throwable $e) {
             $transaction->rollBack();
-            $session->addFlash('error', 'reprocess ไม่สำเร็จ: ' . $e->getMessage());
-            return $this->redirect(['ipdatainfo/index']);
+            throw $e;
         }
 
-        $session->addFlash('success', 'reprocess สำเร็จ: ปรับปรุง ' . $updated . ' รายการ, ยังเป็น ccccc ' . $stillCcccc . ' รายการ');
-        return $this->redirect(['ipdatainfo/index']);
+        return [$updated, $stillCcccc, true];
     }
 
     private function loadFwfMap()
@@ -422,17 +488,7 @@ class IpdatainfoController extends BaseController
             }
 
             if (!empty($matched)) {
-                foreach ($matched as $m) {
-                    $fhid = (string)$m['FundHolderID'];
-                    if ($fhid !== '10739' && $fhid !== '10740') {
-                        $hosb = $fhid;
-                        break;
-                    }
-                }
-
-                if ($hosb === 'ccccc') {
-                    $hosb = (string)$matched[0]['FundHolderID'];
-                }
+                $hosb = $this->pickFundHolderId($matched);
 
                 if ($adjrw > 4.0) {
                     $hosb = 'ccccc';

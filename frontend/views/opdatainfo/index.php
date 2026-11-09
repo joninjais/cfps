@@ -37,7 +37,10 @@ $chk="checkdata";
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
     <p>
         
-        <?= Html::a('ปรับปรุงข้อมูล ', ['index','chk' => $chk],['class' => 'btn btn-info']) ?> 
+        <?= Html::beginForm(['index'], 'post', ['style' => 'display:inline']) ?>
+        <?= Html::hiddenInput('chk', $chk) ?>
+        <?= Html::submitButton('ปรับปรุงข้อมูล', ['class' => 'btn btn-info']) ?>
+        <?= Html::endForm() ?>
         <div class="callout callout-danger">
         (กดปุ่ม ปรับปรุงข้อมูล แก้ติด C กรณีมีการอัปโหลดข้อมูลการรับบริการก่อนอัปโหลดข้อมูลบัตรประกันสุขภาพ) 
         </div>

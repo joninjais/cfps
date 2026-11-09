@@ -5,7 +5,7 @@ use yii\data\ActiveDataProvider;
 use yii\data\ArrayDataProvider;
 use yii;
 
-class RpstlistController extends \yii\web\Controller
+class RpstlistController extends BaseController
 {
     public function actionIndex()
     {
