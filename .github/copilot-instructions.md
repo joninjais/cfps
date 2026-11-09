@@ -15,7 +15,7 @@ nginx: 1.26.3
 
 ## 3. Response Tone & Style
 - Provide clear and concise explanations.
-- When suggesting code changes, consider the existing code style and patterns.
+- When suggesting code changes, thoroughly review the existing code for security vulnerabilities and recommend secure improvements aligned with the current architecture and functionality.
 - Prioritize security, maintainability, and performance in recommendations.
 - Avoid introducing breaking changes without proper justification and communication.
 - Ensure that any new dependencies or libraries are compatible with the existing tech stack and do not introduce security vulnerabilities.
