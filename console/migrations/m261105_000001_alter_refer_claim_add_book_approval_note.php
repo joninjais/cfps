@@ -13,8 +13,60 @@ use yii\db\Migration;
  */
 class m261105_000001_alter_refer_claim_add_book_approval_note extends Migration
 {
-    public function up()
+    private const STATE_TABLE = '{{%m261105_refer_claim_migration_state}}';
+
+    private const ADDED_COLUMNS = [
+        'book_number',
+        'book_date',
+        'approved_by',
+        'approved_status',
+        'approved_date',
+        'approved_time',
+        'note',
+    ];
+
+    public function safeUp()
     {
+        $schema = $this->db->getTableSchema('{{%refer_claim}}', true);
+        if ($schema === null) {
+            throw new \RuntimeException('The refer_claim table does not exist.');
+        }
+
+        $existingColumns = array_filter(
+            self::ADDED_COLUMNS,
+            static fn($column) => $schema->getColumn($column) !== null
+        );
+
+        if (count($existingColumns) === count(self::ADDED_COLUMNS)) {
+            $hospcode = $schema->getColumn('hospcode');
+            $servHospcode = $schema->getColumn('serv_hospcode');
+            $bookNumber = $schema->getColumn('book_number');
+            $bookDate = $schema->getColumn('book_date');
+
+            if (
+                $hospcode === null
+                || $servHospcode === null
+                || $bookNumber === null
+                || $bookDate === null
+                || $hospcode->dbType !== 'varchar(20)'
+                || $servHospcode->dbType !== 'varchar(20)'
+                || $bookNumber->allowNull
+                || $bookDate->allowNull
+            ) {
+                throw new \RuntimeException('The refer_claim table has an inconsistent partial migration.');
+            }
+
+            return;
+        }
+
+        if ($existingColumns !== []) {
+            throw new \RuntimeException('The refer_claim table has an inconsistent partial migration.');
+        }
+
+        $this->createTable(self::STATE_TABLE, [
+            'id' => $this->primaryKey(),
+        ]);
+
         $db = $this->db;
 
         $db->createCommand("ALTER TABLE `refer_claim`
@@ -38,8 +90,12 @@ class m261105_000001_alter_refer_claim_add_book_approval_note extends Migration
             MODIFY `book_date` date NOT NULL COMMENT 'วันที่หนังสือ'")->execute();
     }
 
-    public function down()
+    public function safeDown()
     {
+        if ($this->db->getTableSchema(self::STATE_TABLE, true) === null) {
+            return;
+        }
+
         $this->db->createCommand("ALTER TABLE `refer_claim`
             DROP COLUMN `note`,
             DROP COLUMN `approved_time`,
@@ -50,5 +106,7 @@ class m261105_000001_alter_refer_claim_add_book_approval_note extends Migration
             DROP COLUMN `book_number`,
             MODIFY `hospcode` varchar(5) NOT NULL COMMENT 'รหัส รพ.ต้นทาง (ผู้ส่งต่อ/ผู้จ่าย) เชื่อม opdata.hospcode',
             MODIFY `serv_hospcode` varchar(5) NOT NULL COMMENT 'รหัสหน่วยบริการที่รักษา/เรียกเก็บ เชื่อม opdata.refertohospcode'")->execute();
+
+        $this->dropTable(self::STATE_TABLE);
     }
 }
