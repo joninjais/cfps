@@ -64,6 +64,7 @@ class LocksentdayController extends BaseController
      */
     public function actionCreate()
     {
+        Yii::$app->facilityAccess->requirePermission('manageLockState');
         $model = new Locksentday();
 
         if(!empty($_POST)){
@@ -141,6 +142,7 @@ class LocksentdayController extends BaseController
      */
     public function actionDelete($id)
     {
+        Yii::$app->facilityAccess->requirePermission('manageLockState');
         $this->findModel($id)->delete();
 
         return $this->redirect(['index']);

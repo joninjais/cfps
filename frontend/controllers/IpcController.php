@@ -11,6 +11,7 @@ class IpcController extends BaseController
     {
         $session = Yii::$app->session;
         $hoscode=$session['hoscode'];
+        $facilityCodesSql = $this->facilityCodesSql();
 
         $data = Yii::$app->request->get();
         $date1 = $data['date1'] ?? '';
@@ -19,7 +20,7 @@ class IpcController extends BaseController
   
         $sql = "
         SELECT * FROM ipdata
-        WHERE hospcode = '$hoscode'
+        WHERE hospcode IN ($facilityCodesSql)
 				and dischartdate between ':startDate' and ':endDate'
 				and FundHolderID = 'ccccc'
         ";

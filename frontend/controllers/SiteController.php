@@ -70,7 +70,22 @@ class SiteController extends BaseController
      */
     protected function getPublicActionIds(): array
     {
-        return ['login', 'error', 'captcha', 'request-password-reset', 'reset-password'];
+        return ['login', 'signup', 'facility-name', 'error', 'captcha', 'request-password-reset', 'reset-password'];
+    }
+
+    public function actionFacilityName()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $hoscode = trim((string)Yii::$app->request->get('hoscode', ''));
+
+        if (!preg_match('/^\d{5}$/D', $hoscode)) {
+            return ['name' => null];
+        }
+
+        return [
+            'name' => Yii::$app->facilityAccess->facilityName($hoscode),
+            'role' => Yii::$app->facilityAccess->expectedStaffRole($hoscode),
+        ];
     }
 
     /**
@@ -83,6 +98,7 @@ class SiteController extends BaseController
 
         $session = Yii::$app->session;
         $hoscode=$session['hoscode'];
+        $facilityCodesSql = $this->facilityCodesSql();
 
         
         $datenow=date('Y-m-d');
@@ -108,7 +124,7 @@ class SiteController extends BaseController
           $forward='';
         }
 ################################### client op pp ip ##########################################        
-    if($hoscode!='00064'){    
+    if(!$this->isProvincialAdmin()){
         $sqlip = "
         SELECT 
         q.FundHolderID hoscode, 
@@ -141,7 +157,7 @@ class SiteController extends BaseController
         ipdata
         left join chospital2 on ipdata.FundHolderID=chospital2.hospcode
         WHERE
-        ipdata.hospcode = '$hoscode'
+        ipdata.hospcode IN ($facilityCodesSql)
 				and ipdata.FundHolderID <> 'ccccc'
         and ipdata.dischartdate between ':startDate' and ':endDate'
         )as q 
@@ -158,7 +174,7 @@ class SiteController extends BaseController
         from
         ipdata 
         where dischartdate between ':startDate' and ':endDate'
-        and hospcode = '$hoscode'
+        and hospcode IN ($facilityCodesSql)
         ";
 
         $sqlip_a = "
@@ -170,7 +186,7 @@ class SiteController extends BaseController
         ,TRUNCATE(sum(q.costadjrw),2) costadjrw
         from (        
 				SELECT * FROM ipdata
-        WHERE hospcode = '$hoscode'
+        WHERE hospcode IN ($facilityCodesSql)
 				and dischartdate between ':startDate' and ':endDate'
 				and FundHolderID <> 'ccccc'
 				) as q
@@ -185,7 +201,7 @@ class SiteController extends BaseController
         ,TRUNCATE(sum(q.costadjrw),2) costadjrw
         from (        
 				SELECT * FROM ipdata
-        WHERE hospcode = '$hoscode'
+        WHERE hospcode IN ($facilityCodesSql)
 				and dischartdate between ':startDate' and ':endDate'
 				and FundHolderID = 'ccccc'
 				) as q
@@ -221,7 +237,7 @@ class SiteController extends BaseController
         ipdata
         left join chospital2 on ipdata.FundHolderID=chospital2.hospcode
         WHERE
-        ipdata.hospcode = '$hoscode'
+        ipdata.hospcode IN ($facilityCodesSql)
 				-- and ipdata.FundHolderID='10740'
 				and ipdata.FundHolderID='10740'
 				-- and ipdata.FundHolderID not in('10739','10740')
@@ -261,7 +277,7 @@ class SiteController extends BaseController
         ipdata
         left join chospital2 on ipdata.FundHolderID=chospital2.hospcode
         WHERE
-        ipdata.hospcode = '$hoscode'
+        ipdata.hospcode IN ($facilityCodesSql)
 		and ipdata.FundHolderID='10739'
 		and ipdata.FundHolderID<>'ccccc'
         and ipdata.dischartdate between ':startDate' and ':endDate'
@@ -298,7 +314,7 @@ class SiteController extends BaseController
         ipdata
         left join chospital2 on ipdata.FundHolderID=chospital2.hospcode
         WHERE
-        ipdata.hospcode = '$hoscode'
+        ipdata.hospcode IN ($facilityCodesSql)
 		and ipdata.FundHolderID not in('10739','10740')
 		and ipdata.FundHolderID<>'ccccc'
         and ipdata.dischartdate between ':startDate' and ':endDate'
@@ -327,7 +343,7 @@ class SiteController extends BaseController
 
         FROM opdata 
 
-        WHERE  hospcode = '$hoscode'
+        WHERE  hospcode IN ($facilityCodesSql)
 --        and ($icd10CondOp)
         and op_pp_type = 'pp'
 		and opdata.dateserv between ':startDate' and ':endDate'        
@@ -357,7 +373,7 @@ class SiteController extends BaseController
 
         FROM opdata 
 
-        WHERE  hospcode = '$hoscode'
+        WHERE  hospcode IN ($facilityCodesSql)
 --        and ($icd10CondOp)
         and op_pp_type = 'pp'
 				and opdata.FundHolderID <> 'ccccc'
@@ -388,7 +404,7 @@ class SiteController extends BaseController
     
             FROM opdata 
     
-            WHERE  hospcode = '$hoscode'
+            WHERE  hospcode IN ($facilityCodesSql)
 --            and ($icd10CondOp)
             and op_pp_type = 'pp'
                     and opdata.dateserv between ':startDate' and ':endDate'
@@ -420,7 +436,7 @@ class SiteController extends BaseController
         ,chospital2.hosname hosname
         FROM opdata				   
         left join chospital2 on opdata.FundHolderID=chospital2.hospcode
-        WHERE  opdata.hospcode = '$hoscode'
+        WHERE  opdata.hospcode IN ($facilityCodesSql)
 --        and ($icd10CondOp)
         and op_pp_type = 'pp'
 		and opdata.dateserv between ':startDate' and ':endDate'
@@ -451,7 +467,7 @@ class SiteController extends BaseController
         ,chospital2.hosname hosname
         FROM opdata				   
         left join chospital2 on opdata.FundHolderID=chospital2.hospcode
-        WHERE  opdata.hospcode = '$hoscode'
+        WHERE  opdata.hospcode IN ($facilityCodesSql)
 --        and ($icd10CondOp)
         and op_pp_type = 'pp'
 		and opdata.dateserv between ':startDate' and ':endDate'
@@ -483,7 +499,7 @@ class SiteController extends BaseController
         ,chospital2.hosname hosname
         FROM opdata				   
         left join chospital2 on opdata.FundHolderID=chospital2.hospcode
-        WHERE  opdata.hospcode = '$hoscode'
+        WHERE  opdata.hospcode IN ($facilityCodesSql)
 --        and ($icd10CondOp)
         and op_pp_type = 'pp'
 		and opdata.dateserv between ':startDate' and ':endDate'
@@ -516,7 +532,7 @@ class SiteController extends BaseController
         ,chospital2.hosname hosname
         FROM opdata				   
         left join chospital2 on opdata.FundHolderID=chospital2.hospcode
-        WHERE  opdata.hospcode = '$hoscode'
+        WHERE  opdata.hospcode IN ($facilityCodesSql)
 --        and ($icd10CondOp)
         and op_pp_type = 'pp'
 		and opdata.dateserv between ':startDate' and ':endDate'
@@ -550,7 +566,7 @@ class SiteController extends BaseController
         FROM
         opdata
         WHERE
-        opdata.hospcode = '$hoscode'
+        opdata.hospcode IN ($facilityCodesSql)
         and opdata.dateserv between ':startDate' and ':endDate'
         and op_pp_type = 'op'
         )as q
@@ -578,7 +594,7 @@ class SiteController extends BaseController
         FROM
         opdata
         WHERE
-        opdata.hospcode = '$hoscode'
+        opdata.hospcode IN ($facilityCodesSql)
         and opdata.FundHolderID <> 'ccccc'
         and opdata.dateserv between ':startDate' and ':endDate'
         and op_pp_type = 'op'
@@ -607,7 +623,7 @@ class SiteController extends BaseController
         FROM
         opdata
         WHERE
-        opdata.hospcode = '$hoscode'
+        opdata.hospcode IN ($facilityCodesSql)
         and opdata.FundHolderID = 'ccccc'
         and opdata.dateserv between ':startDate' and ':endDate'
         and op_pp_type = 'op'
@@ -640,7 +656,7 @@ class SiteController extends BaseController
 					opdata
 					left join chospital2 on opdata.FundHolderID=chospital2.hospcode
 					WHERE
-					opdata.hospcode = '$hoscode'
+					opdata.hospcode IN ($facilityCodesSql)
 					and opdata.FundHolderID<>'ccccc'
 					and opdata.dateserv between ':startDate' and ':endDate'
                     and op_pp_type = 'op'
@@ -673,7 +689,7 @@ class SiteController extends BaseController
 					opdata
 					left join chospital2 on opdata.FundHolderID=chospital2.hospcode
 					WHERE
-					opdata.hospcode = '$hoscode'
+					opdata.hospcode IN ($facilityCodesSql)
 					and opdata.FundHolderID='10740'
 					and opdata.FundHolderID<>'ccccc'
 					and opdata.dateserv between ':startDate' and ':endDate'
@@ -707,7 +723,7 @@ class SiteController extends BaseController
 					opdata
 					left join chospital2 on opdata.FundHolderID=chospital2.hospcode
 					WHERE
-					opdata.hospcode = '$hoscode'
+					opdata.hospcode IN ($facilityCodesSql)
 					and opdata.FundHolderID='10739'
 					and opdata.FundHolderID<>'ccccc'
 					and opdata.dateserv between ':startDate' and ':endDate'
@@ -741,7 +757,7 @@ class SiteController extends BaseController
 					opdata
 					left join chospital2 on opdata.FundHolderID=chospital2.hospcode
 					WHERE
-					opdata.hospcode = '$hoscode'
+					opdata.hospcode IN ($facilityCodesSql)
 					and opdata.FundHolderID not in('10740','10739')
 					and opdata.FundHolderID<>'ccccc'
 					and opdata.dateserv between ':startDate' and ':endDate'
@@ -776,7 +792,7 @@ class SiteController extends BaseController
                  )
                  )
                     and opdata.FundHolderID <> 'ccccc'
-                and opdata.FundHolderID='$hoscode'
+                and opdata.FundHolderID IN ($facilityCodesSql)
                     ) as q
                     GROUP BY q.hosname     
             ";  
@@ -927,7 +943,7 @@ class SiteController extends BaseController
     ]);
                } //  if($hoscode!='00064'){ 
 ################################### SSJ ##########################################
-                if($hoscode=='00064'){
+                if($this->isProvincialAdmin()){
 
             #### 10740 ####                   
             $sqlssjop_10739 = "
@@ -1986,8 +2002,8 @@ ORDER BY q.cupcode, q.hospcode
 
         // Already logged in via custom session
         if (!empty($session['user'])) {
-            $check = User::findOne(['user' => $session['user']]);
-            if ($check) {
+            $check = User::findIdentity($session->get('userid'));
+            if ($check && (string)$check->user === (string)$session['user']) {
                 return $this->goHome();
             }
             // stale session — destroy it
@@ -2016,9 +2032,38 @@ ORDER BY q.cupcode, q.hospcode
                 // Reset fail counter
                 Yii::$app->cache->delete($cacheKey);
 
+                if ($loginuser->approval_status !== User::APPROVAL_APPROVED) {
+                    LoginHistory::record(
+                        $loginuser->user,
+                        $loginuser->hoscode,
+                        'failed',
+                        $loginuser->approval_status === User::APPROVAL_PENDING ? 'approval_pending' : 'account_not_approved'
+                    );
+                    Yii::$app->session->setFlash(
+                        'error',
+                        $loginuser->approval_status === User::APPROVAL_PENDING
+                            ? 'บัญชีของท่านอยู่ระหว่างรออนุมัติจาก สสจ.'
+                            : 'บัญชีนี้ยังไม่ได้รับอนุมัติ กรุณาติดต่อผู้ดูแลระบบ'
+                    );
+                    return $this->render('login', ['model' => $model]);
+                }
+
                 // Open and regenerate session to prevent session fixation
                 $session->open();
                 $session->regenerateID(true);
+                if (!Yii::$app->user->login($loginuser, 0)) {
+                    Yii::error('ไม่สามารถสร้างสถานะการเข้าสู่ระบบสำหรับ userid=' . $loginuser->userid, __METHOD__);
+                    throw new \yii\web\ForbiddenHttpException('ไม่สามารถเข้าสู่ระบบได้ กรุณาลองอีกครั้ง');
+                }
+                try {
+                    Yii::$app->facilityAccess->requireAnyRole(['provincialAdmin', 'userManager', 'hospitalStaff', 'pcuStaff']);
+                    Yii::$app->facilityAccess->requirePermission('accessApplication');
+                    Yii::$app->facilityAccess->requireFacilityRoleMatches();
+                } catch (\yii\web\ForbiddenHttpException $exception) {
+                    Yii::$app->user->logout(false);
+                    Yii::$app->session->setFlash('error', 'บัญชีนี้ยังไม่ได้รับการกำหนดสิทธิ์ กรุณาติดต่อผู้ดูแลระบบ');
+                    return $this->render('login', ['model' => $model]);
+                }
                 $session['user']       = $loginuser->user;
                 $session['fname']      = $loginuser->fname;
                 $session['lname']      = $loginuser->lname;
@@ -2029,7 +2074,7 @@ ORDER BY q.cupcode, q.hospcode
                     ->where(['hospcode' => $loginuser->hoscode])
                     ->scalar();                    
                 $session['orgname']    = $hosname;
-                $session['fullname']   = trim(($loginuser->fname ?? '') . ' ' . ($loginuser->lname ?? '')) ?: $loginuser->orgname;
+                $session['fullname']   = trim(($loginuser->fname ?? '') . ' ' . ($loginuser->lname ?? '')) ?: (string)$hosname;
                 $session['hoscode']    = $loginuser->hoscode;
                 $session['userid']     = $loginuser->userid;
                 $session['login_time'] = time();   // for 4-hour expiry check
@@ -2159,6 +2204,8 @@ ORDER BY q.cupcode, q.hospcode
             return $this->redirect(['/site/login']);
         }
 
+        $facilityName = Yii::$app->facilityAccess->facilityName((string)$user->hoscode);
+        $user->orgname = $facilityName ?? '';
         $error   = null;
         $success = null;
 
@@ -2167,12 +2214,14 @@ ORDER BY q.cupcode, q.hospcode
 
             $user->fname       = trim($post['fname']       ?? '');
             $user->lname       = trim($post['lname']       ?? '');
-            $user->orgname     = trim($post['orgname']     ?? '');
+            $user->orgname     = $facilityName ?? '';
             $user->phonenumber = trim($post['phonenumber'] ?? '');
             $user->email       = trim($post['email']       ?? '');
 
             // validate only these fields
-            if ($user->validate(['fname', 'lname', 'phonenumber', 'email'])) {
+            if ($facilityName === null) {
+                $error = 'ไม่พบชื่อหน่วยบริการจากรหัสสถานพยาบาล กรุณาติดต่อผู้ดูแลระบบ';
+            } elseif ($user->validate(['fname', 'lname', 'phonenumber', 'email'])) {
                 $user->save(false, ['fname', 'lname', 'orgname', 'phonenumber', 'email']);
 
                 // sync session
@@ -2191,6 +2240,7 @@ ORDER BY q.cupcode, q.hospcode
             'user'    => $user,
             'error'   => $error,
             'success' => $success,
+            'facilityName' => $facilityName,
         ]);
     }
 
@@ -2236,10 +2286,9 @@ ORDER BY q.cupcode, q.hospcode
     {
         $model = new SignupForm();
         if ($model->load(Yii::$app->request->post())) {
-            if ($user = $model->signup()) {
-                if (Yii::$app->getUser()->login($user)) {
-                    return $this->goHome();
-                }
+            if ($model->signup()) {
+                Yii::$app->session->setFlash('success', 'สมัครบัญชีสำเร็จ บัญชีของท่านจะเข้าใช้งานได้หลัง สสจ. อนุมัติ');
+                return $this->redirect(['/site/login']);
             }
         }
 
@@ -2303,6 +2352,7 @@ ORDER BY q.cupcode, q.hospcode
     {
         $session = Yii::$app->session;
         $hoscode = $session['hoscode'];
+        $facilityCodesSql = $this->facilityCodesSql();
 
         $icd10Codes = ['Z34','Z13','Z35','Z30','Z31','Z32','Z33','Z39',
                        'Z364','Z37','Z21','Z23.2','Z240','Z244','Z245',
@@ -2348,7 +2398,7 @@ ORDER BY q.cupcode, q.hospcode
         // =========================================================
         //  Non-SSJ branch  (individual hospital)
         // =========================================================
-        if ($hoscode !== '00064') {
+        if (!$this->isProvincialAdmin()) {
 
             // ── IP aggregate queries ──────────────────────────────
             $sqlipall = "
@@ -2360,7 +2410,7 @@ ORDER BY q.cupcode, q.hospcode
             ,TRUNCATE(sum(costadjrw),2) as costadjrw
             from ipdata
             where dischartdate between ':startDate' and ':endDate'
-            and hospcode = '$hoscode'
+            and hospcode IN ($facilityCodesSql)
             ";
 
             $sqlip_a = "
@@ -2369,7 +2419,7 @@ ORDER BY q.cupcode, q.hospcode
             ,TRUNCATE(sum(adjrw),4) adjrw ,TRUNCATE(sum(q.costadjrw),2) costadjrw
             from (
             SELECT * FROM ipdata
-            WHERE hospcode = '$hoscode'
+            WHERE hospcode IN ($facilityCodesSql)
             and dischartdate between ':startDate' and ':endDate'
             and FundHolderID <> 'ccccc'
             ) as q
@@ -2381,7 +2431,7 @@ ORDER BY q.cupcode, q.hospcode
             ,TRUNCATE(sum(adjrw),4) adjrw ,TRUNCATE(sum(q.costadjrw),2) costadjrw
             from (
             SELECT * FROM ipdata
-            WHERE hospcode = '$hoscode'
+            WHERE hospcode IN ($facilityCodesSql)
             and dischartdate between ':startDate' and ':endDate'
             and FundHolderID = 'ccccc'
             ) as q
@@ -2395,7 +2445,7 @@ ORDER BY q.cupcode, q.hospcode
             cast(ipdata.los as int) los,ipdata.cost cost,ipdata.adjrw,
             TRUNCATE(ipdata.adjrw*8600,2) as costadjrw,ipdata.FundHolderID
             FROM ipdata
-            WHERE ipdata.hospcode = '$hoscode'
+            WHERE ipdata.hospcode IN ($facilityCodesSql)
             and ipdata.FundHolderID not in('10739','10740')
             and ipdata.FundHolderID<>'ccccc'
             and ipdata.dischartdate between ':startDate' and ':endDate' )as q
@@ -2409,7 +2459,7 @@ ORDER BY q.cupcode, q.hospcode
             cast(ipdata.los as int) los,ipdata.cost cost,ipdata.adjrw,
             TRUNCATE(ipdata.adjrw*8600,2) as costadjrw,ipdata.FundHolderID
             FROM ipdata
-            WHERE ipdata.hospcode = '$hoscode'
+            WHERE ipdata.hospcode IN ($facilityCodesSql)
             and ipdata.FundHolderID='10739'
             and ipdata.FundHolderID<>'ccccc'
             and ipdata.dischartdate between ':startDate' and ':endDate' )as q
@@ -2423,7 +2473,7 @@ ORDER BY q.cupcode, q.hospcode
             cast(ipdata.los as int) los,ipdata.cost cost,ipdata.adjrw,
             TRUNCATE(ipdata.adjrw*8600,2) as costadjrw,ipdata.FundHolderID
             FROM ipdata
-            WHERE ipdata.hospcode = '$hoscode'
+            WHERE ipdata.hospcode IN ($facilityCodesSql)
             and ipdata.FundHolderID='10740'
             and ipdata.FundHolderID<>'ccccc'
             and ipdata.dischartdate between ':startDate' and ':endDate' )as q
@@ -2438,7 +2488,7 @@ ORDER BY q.cupcode, q.hospcode
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim,
             opdata.FundHolderID as fundHos
             FROM opdata
-            WHERE hospcode = '$hoscode'
+            WHERE hospcode IN ($facilityCodesSql)
             and op_pp_type = 'op'            
             and opdata.dateserv between ':startDate' and ':endDate'
             ) as q
@@ -2451,7 +2501,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE hospcode = '$hoscode'
+            WHERE hospcode IN ($facilityCodesSql)
             and op_pp_type = 'pp'
             and opdata.FundHolderID <> 'ccccc'
             and opdata.dateserv between ':startDate' and ':endDate'
@@ -2465,7 +2515,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE hospcode = '$hoscode'
+            WHERE hospcode IN ($facilityCodesSql)
             and op_pp_type = 'pp'
             and opdata.dateserv between ':startDate' and ':endDate'
             and opdata.FundHolderID='ccccc'
@@ -2479,7 +2529,7 @@ ORDER BY q.cupcode, q.hospcode
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim,
             opdata.FundHolderID as fundHos
             FROM opdata
-            WHERE opdata.hospcode = '$hoscode'
+            WHERE opdata.hospcode IN ($facilityCodesSql)
             and op_pp_type = 'pp'
             and opdata.dateserv between ':startDate' and ':endDate'
             and opdata.FundHolderID not in ('10739','10740')
@@ -2493,7 +2543,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE opdata.hospcode = '$hoscode'
+            WHERE opdata.hospcode IN ($facilityCodesSql)
             and op_pp_type = 'pp'
             and opdata.dateserv between ':startDate' and ':endDate'
             and opdata.FundHolderID='10739'
@@ -2507,7 +2557,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE opdata.hospcode = '$hoscode'
+            WHERE opdata.hospcode IN ($facilityCodesSql)
             and op_pp_type = 'pp'
             and opdata.dateserv between ':startDate' and ':endDate'
             and opdata.FundHolderID='10740'
@@ -2524,7 +2574,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE opdata.hospcode = '$hoscode'
+            WHERE opdata.hospcode IN ($facilityCodesSql)
             and opdata.dateserv between ':startDate' and ':endDate'
             and op_pp_type = 'op'
             )as q
@@ -2537,7 +2587,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE opdata.hospcode = '$hoscode'
+            WHERE opdata.hospcode IN ($facilityCodesSql)
             and opdata.FundHolderID <> 'ccccc'
             and opdata.dateserv between ':startDate' and ':endDate'
             and op_pp_type = 'op'
@@ -2551,7 +2601,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE opdata.hospcode = '$hoscode'
+            WHERE opdata.hospcode IN ($facilityCodesSql)
             and opdata.FundHolderID = 'ccccc'
             and opdata.dateserv between ':startDate' and ':endDate'
             and op_pp_type = 'op'
@@ -2565,7 +2615,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE opdata.hospcode = '$hoscode'
+            WHERE opdata.hospcode IN ($facilityCodesSql)
             and opdata.FundHolderID not in('10740','10739')
             and opdata.FundHolderID<>'ccccc'
             and opdata.dateserv between ':startDate' and ':endDate'
@@ -2580,7 +2630,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE opdata.hospcode = '$hoscode'
+            WHERE opdata.hospcode IN ($facilityCodesSql)
             and opdata.FundHolderID='10739'
             and opdata.FundHolderID<>'ccccc'
             and opdata.dateserv between ':startDate' and ':endDate'
@@ -2595,7 +2645,7 @@ ORDER BY q.cupcode, q.hospcode
             case when(CAST(opdata.alltotal as DECIMAL(20,2)) >= 700) then 700
             when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end as claim
             FROM opdata
-            WHERE opdata.hospcode = '$hoscode'
+            WHERE opdata.hospcode IN ($facilityCodesSql)
             and opdata.FundHolderID='10740'
             and opdata.FundHolderID<>'ccccc'
             and opdata.dateserv between ':startDate' and ':endDate'

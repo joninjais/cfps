@@ -32,7 +32,7 @@ $ey2  = substr($date2,0,4);  $em2  = substr($date2,5,2);  $ed2  = substr($date2,
 $edate2 = ((int)$ey2-543).'-'.$em2.'-'.$ed2;
 
 // ── Per-fund extract helpers (non-SSJ) ───────────────────────
-if ($hoscode !== '00064') {
+if (!Yii::$app->facilityAccess->isProvincialAdmin()) {
     $op_all   = $queryop_all[0]  ?? [];
     $op_a     = $queryop_a[0]    ?? [];
     $op_c     = $queryop_c[0]    ?? [];
@@ -200,7 +200,7 @@ if ($hoscode !== '00064') {
 <!-- ================================================================
      NON-SSJ view  (individual hospital dashboard)
      ================================================================ -->
-<?php if ($hoscode !== '00064'): ?>
+<?php if (!Yii::$app->facilityAccess->isProvincialAdmin()): ?>
 
 <div class="col-md-12">
   <div class="cfps-info-bar">
@@ -459,7 +459,7 @@ if ($hoscode !== '00064') {
 <!-- ================================================================
      SSJ view  (hoscode == '00064') — per-hospital summary
      ================================================================ -->
-<?php if ($hoscode === '00064'): ?>
+<?php if (Yii::$app->facilityAccess->isProvincialAdmin()): ?>
 
 <?php
 // Build lookup maps keyed by hospcode

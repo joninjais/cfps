@@ -282,8 +282,13 @@ class OpdatainfoController extends BaseController
     {
         $model = new Opdata();
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->opid]);
+        if ($model->load(Yii::$app->request->post())) {
+            if (!$this->isProvincialAdmin()) {
+                $model->hospcode = trim((string)Yii::$app->session->get('hoscode'));
+            }
+            if ($model->save()) {
+                return $this->redirect(['view', 'id' => $model->opid]);
+            }
         }
 
         return $this->render('create', [
@@ -300,10 +305,13 @@ class OpdatainfoController extends BaseController
 
         $xlsdata = (new \yii\db\Query())->from('xlsfileuploads')->where(['xlsid' => $xlsid])->one();
 
-        // ไฟล์ต้องเป็นของหน่วยบริการที่ล็อกอินอยู่ (ยกเว้น 00064)
-        if (empty($xlsdata) || (!$this->isProvincialAdmin()
-            && trim((string)$xlsdata['hoscode']) !== trim((string)Yii::$app->session->get('hoscode')))) {
+        if (empty($xlsdata) || ($xlsdata['typefileupload'] ?? null) !== 'op pp') {
             Yii::$app->session->addFlash('error', 'ไม่พบไฟล์ หรือไม่มีสิทธิ์นำเข้าไฟล์นี้');
+            return $this->redirect(['opdatainfo/index']);
+        }
+        $ownershipError = $this->checkImportOwnership($xlsdata, []);
+        if ($ownershipError !== null) {
+            Yii::$app->session->addFlash('error', $ownershipError);
             return $this->redirect(['opdatainfo/index']);
         }
 
@@ -595,10 +603,15 @@ class OpdatainfoController extends BaseController
      */
     public function actionUpdate($id)
     {
-        $model = $this->findModel($id);
+        $model = $this->findModel($id, true);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->opid]);
+        if ($model->load(Yii::$app->request->post())) {
+            if (!$this->isProvincialAdmin()) {
+                $model->hospcode = trim((string)Yii::$app->session->get('hoscode'));
+            }
+            if ($model->save()) {
+                return $this->redirect(['view', 'id' => $model->opid]);
+            }
         }
 
         return $this->render('update', [
@@ -615,7 +628,11 @@ class OpdatainfoController extends BaseController
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $model = $this->findModel($id, true);
+        if (!$model->delete()) {
+            Yii::error('ไม่สามารถลบข้อมูล OP id=' . $model->opid, __METHOD__);
+            throw new \yii\web\ServerErrorHttpException('ลบข้อมูลไม่สำเร็จ');
+        }
 
         return $this->redirect(['index']);
     }
@@ -627,10 +644,12 @@ class OpdatainfoController extends BaseController
      * @return Opdata the loaded model
      * @throws NotFoundHttpException if the model cannot be found
      */
-    protected function findModel($id)
+    protected function findModel($id, bool $forWrite = false)
     {
         if (($model = Opdata::findOne($id)) !== null) {
-            return $model;
+            if (Yii::$app->facilityAccess->canAccessFacility((string)$model->hospcode, $forWrite)) {
+                return $model;
+            }
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');

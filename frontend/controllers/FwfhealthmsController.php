@@ -10,6 +10,8 @@ class FwfhealthmsController extends BaseController
     {
         $session = Yii::$app->session;
         $hoscode=$session['hoscode'];
+        $facilityCodesSql = $this->facilityCodesSql();
+        $facilityFilterSql = ' AND fwfhealth.hcode IN (' . $facilityCodesSql . ')';
 
         $data = Yii::$app->request->get();
   
@@ -66,6 +68,7 @@ class FwfhealthmsController extends BaseController
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
           WHERE fwfhealth.datev BETWEEN '$yg-10-01' and '$yg1-09-30'
+          $facilityFilterSql
 --           and fwfhealth.check_card='pass'
             )as q
             GROUP BY q.hosname         
@@ -121,6 +124,7 @@ class FwfhealthmsController extends BaseController
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
           WHERE fwfhealth.datev BETWEEN '$yg-10-01' and '$yg1-09-30'
+          $facilityFilterSql
 --           and fwfhealth.check_card='pass'
             )as q
             GROUP BY q.hosname              

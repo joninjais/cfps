@@ -85,7 +85,7 @@ $checklogin = Sysmember::findOne(['id'=>$session['userid'],]);
                             ["label" => "KPI", "url" => ["/kpi/index"], "icon" => "th"],
                             ["label" => "คำสั่ง SQL นำเข้าข้อมูล", "url" => ["/sqlcode/index"], "icon" => "code"],
                         ];
-                        if ($session->get('hoscode') === '00064') {
+                        if (Yii::$app->facilityAccess->isProvincialAdmin()) {
                             $menuItems[] = ["label" => "จัดการคำสั่ง SQL", "url" => ["/sqlcode/index"], "icon" => "database"];
                         }
                         echo \yiister\gentelella\widgets\Menu::widget(["items" => $menuItems]);

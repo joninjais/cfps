@@ -7,6 +7,7 @@ use frontend\models\FwfFyClaim;
 use frontend\models\User;
 use yii\web\Controller;
 use yii\data\SqlDataProvider;
+use yii\filters\VerbFilter;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -20,9 +21,24 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
  */
 class FwfFyClaimController extends BaseController
 {
+    public function behaviors()
+    {
+        return [
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'import' => ['POST'],
+                    'clear' => ['POST'],
+                ],
+            ],
+        ];
+    }
+
     // ── SQL ต้นฉบับที่ใช้ดึงข้อมูลและนำเข้า ─────────────────────────────
     private function buildSourceSql()
     {
+        $facilityCodesSql = $this->facilityCodesSql();
+
         return "
         WITH RECURSIVE fy_range AS (
             SELECT
@@ -105,6 +121,7 @@ class FwfFyClaimController extends BaseController
         JOIN fy_range fy
             ON f.PeriodStartDate <= fy.fy_end
             AND f.PeriodEndDate   >  fy.fy_start
+        WHERE f.FundHolderID IN ({$facilityCodesSql})
         ORDER BY f.PeriodStartDate, f.CID, fy.fiscal_year
         ";
     }
@@ -122,21 +139,24 @@ class FwfFyClaimController extends BaseController
         $fyFilter  = (int)($get['fy'] ?? 0);
         $hosFilter = trim($get['hos'] ?? '');
         $message   = $get['msg'] ?? '';
+        $scopeSql = ' WHERE FundHolderID IN (' . $this->facilityCodesSql() . ')';
 
         // นับแถวในตาราง
-        $totalRows = Yii::$app->db->createCommand('SELECT COUNT(*) FROM {{%fwf_fy_claim}}')->queryScalar();
-        $lastImport = Yii::$app->db->createCommand('SELECT MAX(imported_at) FROM {{%fwf_fy_claim}}')->queryScalar();
+        $totalRows = Yii::$app->db->createCommand('SELECT COUNT(*) FROM {{%fwf_fy_claim}}' . $scopeSql)->queryScalar();
+        $lastImport = Yii::$app->db->createCommand('SELECT MAX(imported_at) FROM {{%fwf_fy_claim}}' . $scopeSql)->queryScalar();
 
         // รายการปีงบที่มีในตาราง
-        $fyList = Yii::$app->db->createCommand('SELECT DISTINCT FiscalYear FROM {{%fwf_fy_claim}} ORDER BY FiscalYear DESC')->queryColumn();
+        $fyList = Yii::$app->db->createCommand(
+            'SELECT DISTINCT FiscalYear FROM {{%fwf_fy_claim}}' . $scopeSql . ' ORDER BY FiscalYear DESC'
+        )->queryColumn();
 
         // รายการ FundHolderID ที่มีในตาราง
         $hosList = Yii::$app->db->createCommand(
-            'SELECT DISTINCT FundHolderID, hosname FROM {{%fwf_fy_claim}} ORDER BY FundHolderID'
+            'SELECT DISTINCT FundHolderID, hosname FROM {{%fwf_fy_claim}}' . $scopeSql . ' ORDER BY FundHolderID'
         )->queryAll();
 
         // Query แสดงผล (กรองตามเงื่อนไข)
-        $where = '1=1';
+        $where = '1=1' . ($scopeSql === '' ? '' : ' AND ' . substr($scopeSql, 7));
         $params = [];
         if ($fyFilter) {
             $where .= ' AND FiscalYear = :fy';
@@ -196,6 +216,8 @@ class FwfFyClaimController extends BaseController
     // ── actionImport : นำเข้าข้อมูล (INSERT ... ON DUPLICATE KEY UPDATE เพื่อไม่ให้ซ้ำ) ─────────
     public function actionImport()
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
+
         $session = Yii::$app->session;
         $checklogin = User::findOne(['user' => $session['user']]);
         if (!$checklogin) {
@@ -224,9 +246,14 @@ class FwfFyClaimController extends BaseController
             ";
 
             $db = Yii::$app->db;
-            $before = (int)$db->createCommand('SELECT COUNT(*) FROM {{%fwf_fy_claim}}')->queryScalar();
+            $scopeSql = ' WHERE FundHolderID IN (' . $this->facilityCodesSql() . ')';
+            $before = (int)$db->createCommand(
+                'SELECT COUNT(*) FROM {{%fwf_fy_claim}}' . $scopeSql
+            )->queryScalar();
             $db->createCommand($insertSql)->execute();
-            $after  = (int)$db->createCommand('SELECT COUNT(*) FROM {{%fwf_fy_claim}}')->queryScalar();
+            $after  = (int)$db->createCommand(
+                'SELECT COUNT(*) FROM {{%fwf_fy_claim}}' . $scopeSql
+            )->queryScalar();
 
             $inserted = $after - $before;
             $msg = "นำเข้าสำเร็จ: เพิ่มข้อมูล {$inserted} แถว (ทั้งหมด {$after} แถวในตาราง)";
@@ -255,7 +282,8 @@ class FwfFyClaimController extends BaseController
         $hosFilter = trim($get['hos'] ?? '');
 
         // ── สร้าง WHERE clause ────────────────────────────────────────────────
-        $where  = '1=1';
+        $scopeSql = ' AND FundHolderID IN (' . $this->facilityCodesSql() . ')';
+        $where  = '1=1' . $scopeSql;
         $params = [];
         if ($fyFilter) {
             $where .= ' AND FiscalYear = :fy';
@@ -444,6 +472,7 @@ class FwfFyClaimController extends BaseController
     // ── actionClear : ลบข้อมูลทั้งหมดในตาราง ──────────────────────────────
     public function actionClear()
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
         $session = Yii::$app->session;
         $checklogin = User::findOne(['user' => $session['user']]);
         if (!$checklogin) {
@@ -457,8 +486,11 @@ class FwfFyClaimController extends BaseController
 
         try {
             $db = Yii::$app->db;
-            $before = (int)$db->createCommand('SELECT COUNT(*) FROM {{%fwf_fy_claim}}')->queryScalar();
-            $db->createCommand('DELETE FROM {{%fwf_fy_claim}}')->execute();
+            $scopeSql = 'FundHolderID IN (' . $this->facilityCodesSql() . ')';
+            $before = (int)$db->createCommand(
+                'SELECT COUNT(*) FROM {{%fwf_fy_claim}} WHERE ' . $scopeSql
+            )->queryScalar();
+            $db->createCommand('DELETE FROM {{%fwf_fy_claim}} WHERE ' . $scopeSql)->execute();
             $msg = "เคลียข้อมูลสำเร็จ: ลบ {$before} แถว";
         } catch (\Exception $e) {
             $msg = 'เกิดข้อผิดพลาด: ' . $e->getMessage();

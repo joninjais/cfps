@@ -31,6 +31,7 @@ class InsurancepoliciesController extends BaseController
                 'actions' => [
                     'delete'          => ['POST'],
                     'clear-policies'  => ['POST'],
+                    'import'          => ['POST'],
                 ],
             ],
         ];
@@ -38,16 +39,20 @@ class InsurancepoliciesController extends BaseController
 
     public function actionClearPolicies()
     {
-        $session = Yii::$app->session;
-        $hoscode = $session['hoscode'];
-        $isAdmin = ($hoscode === '00064');
+        $isAdmin = $this->isProvincialAdmin();
 
         if ($isAdmin) {
-            $deleted = Yii::$app->db->createCommand('DELETE FROM insurance_policies')->execute();
+            Yii::$app->facilityAccess->requirePermission('manageInsurancePolicies');
+            $deleted = Yii::$app->db->createCommand()->delete(
+                'insurance_policies',
+                ['agency_code' => Yii::$app->facilityAccess->provincialFacilityCodes()]
+            )->execute();
         } else {
-            $deleted = Yii::$app->db->createCommand(
-                'DELETE FROM insurance_policies WHERE agency_code LIKE :hoscode'
-            )->bindValue(':hoscode', '%' . $hoscode . '%')->execute();
+            $codes = Yii::$app->facilityAccess->visibleFacilityCodes(true);
+            $deleted = Yii::$app->db->createCommand()->delete(
+                'insurance_policies',
+                ['agency_code' => $codes]
+            )->execute();
         }
 
         Yii::$app->session->addFlash('success', 'ลบข้อมูลกรมธรรม์สำเร็จ ' . $deleted . ' รายการ');
@@ -61,7 +66,7 @@ class InsurancepoliciesController extends BaseController
     {
         $session = Yii::$app->session;
         $hoscode = trim((string)$session['hoscode']);
-        $isAdmin = ($hoscode === '00064');
+        $isAdmin = $this->isProvincialAdmin();
         if ($hoscode === '') {
             throw new ForbiddenHttpException('ไม่พบรหัสหน่วยงานใน session');
         }
@@ -86,12 +91,15 @@ class InsurancepoliciesController extends BaseController
             throw new ForbiddenHttpException('ไม่มีสิทธิ์เลือกหน่วยงานอื่น');
         }
         $agencies = [];
+        $agencyCodes = $isAdmin
+            ? Yii::$app->facilityAccess->provincialFacilityCodes()
+            : Yii::$app->facilityAccess->visibleFacilityCodes();
         if ($isAdmin) {
             $agencyRows = (new Query())->select([
                 'agency_code',
                 'agency_name' => new Expression('MAX(agency_name)'),
             ])->from('insurance_policies')
-                ->where(['not', ['agency_code' => null]])
+                ->where(['agency_code' => $agencyCodes])
                 ->andWhere(['<>', 'agency_code', ''])
                 ->groupBy('agency_code')
                 ->orderBy(['agency_code' => SORT_ASC])->all();
@@ -117,9 +125,8 @@ class InsurancepoliciesController extends BaseController
         }
 
         $baseQuery = (new Query())->from('insurance_policies');
-        if (!$isAdmin) {
-            $baseQuery->andWhere(['like', 'agency_code', $hoscode]);
-        } elseif ($agencyParam !== '') {
+        $baseQuery->andWhere(['agency_code' => $agencyCodes]);
+        if ($isAdmin && $agencyParam !== '') {
             $baseQuery->andWhere(['agency_code' => $agencyParam]);
         }
         if ($start !== null) {
@@ -190,15 +197,14 @@ class InsurancepoliciesController extends BaseController
 
     public function actionImport($id)
     {
+        Yii::$app->facilityAccess->requirePermission('manageInsurancePolicies');
+
         $params = Yii::$app->request->get();
         $xlsid = (int)($params['id'] ?? $id);
         if (empty($xlsid)) {
             Yii::$app->session->addFlash('error', 'ไม่พบรหัสไฟล์นำเข้า');
             return $this->redirect(['insurancepolicies/index']);
         }
-
-        $stimpdat = date('Y-m-d H:i:s');
-        Yii::$app->db->createCommand()->update('xlsfileuploads', ['startdatetime' => $stimpdat], 'xlsid = :id', [':id' => $xlsid])->execute();
 
         $xlsdata = (new \yii\db\Query())
             ->from('xlsfileuploads')
@@ -209,6 +215,17 @@ class InsurancepoliciesController extends BaseController
             Yii::$app->session->addFlash('error', 'ไม่พบข้อมูลไฟล์ที่ต้องการนำเข้า');
             return $this->redirect(['insurancepolicies/index']);
         }
+        $ownershipError = $this->checkImportOwnership($xlsdata, []);
+        if ($ownershipError !== null || $xlsdata['typefileupload'] !== 'insurance') {
+            Yii::$app->session->addFlash('error', $ownershipError ?? 'ประเภทไฟล์ไม่รองรับการนำเข้ากรมธรรม์');
+            return $this->redirect(['insurancepolicies/index']);
+        }
+
+        Yii::$app->db->createCommand()->update(
+            'xlsfileuploads',
+            ['startdatetime' => date('Y-m-d H:i:s')],
+            ['xlsid' => $xlsid]
+        )->execute();
 
         $file = Yii::getAlias('@webroot') . '/uploads/' . $xlsdata['exsfile'];
         if (!is_file($file)) {
@@ -316,6 +333,16 @@ class InsurancepoliciesController extends BaseController
                 ) {
                     $skipped++;
                     continue;
+                }
+
+                if ($agencyCode !== null) {
+                    $agencyCode = trim($agencyCode);
+                    if (ctype_digit($agencyCode)) {
+                        $agencyCode = str_pad($agencyCode, 5, '0', STR_PAD_LEFT);
+                    }
+                    if (!Yii::$app->facilityAccess->canAccessFacility($agencyCode)) {
+                        throw new \RuntimeException('รหัสหน่วยบริการอยู่นอกขอบเขตจังหวัดในแถว ' . $row);
+                    }
                 }
 
                 if ($cardPrice === null || $cardPrice == 0) {
@@ -570,8 +597,21 @@ class InsurancepoliciesController extends BaseController
     {
         $model = new Insurancepolicies();
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        if ($model->load(Yii::$app->request->post())) {
+            if (!$this->isProvincialAdmin()) {
+                $model->agency_code = trim((string)Yii::$app->session->get('hoscode'));
+                $model->agency_name = (string)(new Query())
+                    ->select('hosname')
+                    ->from('chospital2')
+                    ->where(['hospcode' => $model->agency_code])
+                    ->scalar();
+            } elseif (!Yii::$app->facilityAccess->canAccessFacility((string)$model->agency_code, true)) {
+                throw new ForbiddenHttpException('ไม่มีสิทธิ์จัดการข้อมูลหน่วยบริการนี้');
+            }
+
+            if ($model->save()) {
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
         }
 
         return $this->render('create', [
@@ -588,10 +628,18 @@ class InsurancepoliciesController extends BaseController
      */
     public function actionUpdate($id)
     {
-        $model = $this->findModel($id);
+        $model = $this->findModel($id, true);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        if ($model->load(Yii::$app->request->post())) {
+            if (!$this->isProvincialAdmin()) {
+                $model->agency_code = trim((string)Yii::$app->session->get('hoscode'));
+            } elseif (!Yii::$app->facilityAccess->canAccessFacility((string)$model->agency_code, true)) {
+                throw new ForbiddenHttpException('ไม่มีสิทธิ์จัดการข้อมูลหน่วยบริการนี้');
+            }
+
+            if ($model->save()) {
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
         }
 
         return $this->render('update', [
@@ -608,7 +656,11 @@ class InsurancepoliciesController extends BaseController
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $model = $this->findModel($id, true);
+        if (!$model->delete()) {
+            Yii::error('ไม่สามารถลบกรมธรรม์ id=' . $model->id, __METHOD__);
+            throw new \yii\web\ServerErrorHttpException('ลบข้อมูลไม่สำเร็จ');
+        }
 
         return $this->redirect(['index']);
     }
@@ -620,10 +672,12 @@ class InsurancepoliciesController extends BaseController
      * @return Insurancepolicies the loaded model
      * @throws NotFoundHttpException if the model cannot be found
      */
-    protected function findModel($id)
+    protected function findModel($id, bool $forWrite = false)
     {
         if (($model = Insurancepolicies::findOne($id)) !== null) {
-            return $model;
+            if (Yii::$app->facilityAccess->canAccessFacility((string)$model->agency_code, $forWrite)) {
+                return $model;
+            }
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');

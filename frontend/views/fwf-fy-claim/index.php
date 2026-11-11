@@ -52,6 +52,7 @@ if (!$checklogin) {
       </div>
       <div class="col-md-9 col-sm-6" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px;">
         <!-- Clear button (POST via form) -->
+        <?php if (Yii::$app->user->can('manageFwfData')): ?>
         <form method="post" action="<?= Url::to(['/fwf-fy-claim/clear']) ?>" style="display:inline;"
               onsubmit="return confirm('⚠️ ยืนยันการลบข้อมูลทั้งหมด <?= number_format($totalRows) ?> แถว? ไม่สามารถกู้คืนได้');">
           <input type="hidden" name="<?= Yii::$app->request->csrfParam ?>" value="<?= Yii::$app->request->getCsrfToken() ?>">
@@ -60,16 +61,18 @@ if (!$checklogin) {
           </button>
         </form>
         <!-- Import button -->
-        <?= Html::a(
+        <?= Html::beginForm(['/fwf-fy-claim/import'], 'post', ['style' => 'display:inline;']) ?>
+        <?= Html::submitButton(
             '<i class="fa fa-fw fa-download"></i> 2.นำเข้าข้อมูล (Import)',
-            ['/fwf-fy-claim/import'],
             [
                 'class'   => 'btn btn-primary',
                 'title'   => 'นำเข้าข้อมูลจาก fwfdatabase คำนวณ claim แยกรายปีงบประมาณ (ไม่นำเข้าซ้ำ)',
-                'onclick' => "return confirm('ยืนยันการนำเข้าข้อมูล? อาจใช้เวลาสักครู่');",
+                'data-confirm' => 'ยืนยันการนำเข้าข้อมูล? อาจใช้เวลาสักครู่',
                 'style'   => 'font-size:1rem;',
             ]
         ) ?>
+        <?= Html::endForm() ?>
+        <?php endif; ?>
 
         <!-- Export button -->
         <?= Html::a(

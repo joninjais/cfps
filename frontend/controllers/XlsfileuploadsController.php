@@ -56,7 +56,8 @@ class XlsfileuploadsController extends BaseController
     public function actionReimport($id)
     {
         $id = (int) $id;
-        if ($id > 0) {
+        $model = $this->findModel($id, true);
+        if ($id > 0 && $model->xlsid) {
             Yii::$app->db->createCommand()
                 ->update('xlsfileuploads', ['importstatus' => 0, 'startdatetime' => null, 'enddatetime' => null], ['xlsid' => $id])
                 ->execute();
@@ -88,8 +89,19 @@ class XlsfileuploadsController extends BaseController
         $model = new Xlsfileuploads();
 
         if ($model->load(Yii::$app->request->post())) {
+            if (!$this->isProvincialAdmin()) {
+                $model->user = (string)Yii::$app->session->get('user');
+                $model->hoscode = trim((string)Yii::$app->session->get('hoscode'));
+                if (!in_array($model->typefileupload, ['op pp', 'ip', 'insurance'], true)) {
+                    $model->addError('typefileupload', 'ไม่มีสิทธิ์อัปโหลดไฟล์ประเภทนี้');
+                }
+            } elseif (!Yii::$app->facilityAccess->canAccessFacility((string)$model->hoscode, true)) {
+                $model->addError('hoscode', 'รหัสหน่วยบริการอยู่นอกขอบเขตจังหวัด');
+            }
             $model->exsfile = UploadedFile::getInstance($model, 'exsfile');
-            if ($model->exsfile === null) {
+            if ($model->hasErrors()) {
+                // Keep the submitted values so the form can display validation errors.
+            } elseif ($model->exsfile === null) {
                 $model->addError('exsfile', 'กรุณาเลือกไฟล์ Excel');
             } elseif ($model->validate()) {
                 $uploadedFile = $model->upload($model, 'exsfile');
@@ -119,12 +131,23 @@ class XlsfileuploadsController extends BaseController
      */
     public function actionUpdate($id)
     {
-        $model = $this->findModel($id);
+        $model = $this->findModel($id, true);
 
         if ($model->load(Yii::$app->request->post())
             && $model->validate(['user', 'hoscode', 'typefileupload'])
-            && $model->save(false, ['user', 'hoscode', 'typefileupload'])) {
-            return $this->redirect(['view', 'id' => $model->xlsid]);
+        ) {
+            if (!$this->isProvincialAdmin()) {
+                $model->user = (string)Yii::$app->session->get('user');
+                $model->hoscode = trim((string)Yii::$app->session->get('hoscode'));
+                if (!in_array($model->typefileupload, ['op pp', 'ip', 'insurance'], true)) {
+                    $model->addError('typefileupload', 'ไม่มีสิทธิ์เลือกไฟล์ประเภทนี้');
+                }
+            } elseif (!Yii::$app->facilityAccess->canAccessFacility((string)$model->hoscode, true)) {
+                $model->addError('hoscode', 'รหัสหน่วยบริการอยู่นอกขอบเขตจังหวัด');
+            }
+            if (!$model->hasErrors() && $model->save(false, ['user', 'hoscode', 'typefileupload'])) {
+                return $this->redirect(['view', 'id' => $model->xlsid]);
+            }
         }
 
         return $this->render('update', [
@@ -141,53 +164,59 @@ class XlsfileuploadsController extends BaseController
      */
     public function actionDelete($id)
     {
-        
+        $model = $this->findModel($id, true);
+        if ($model->typefileupload === 'fwfdata' || $model->typefileupload === 'fwfhealth') {
+            Yii::$app->facilityAccess->requirePermission('manageFwfData');
+        }
 
-        $xlsid = Yii::$app->request->get();
-        $xlsid = $xlsid['id'] ?? '';
+        $fileName = basename((string)$model->exsfile);
+        if ($fileName === '' || $fileName !== $model->exsfile) {
+            throw new \yii\web\ForbiddenHttpException('ชื่อไฟล์อัปโหลดไม่ถูกต้อง');
+        }
 
-        $xlsdata = (new \yii\db\Query())
-            ->from('xlsfileuploads')
-            ->where(['xlsid' => $xlsid])
-            ->one();
-        
-            $data = Yii::$app->request->get();
-            $del = $data['del'] ?? '';
-            //ลบข้อมูล
-            if(!empty($xlsid)){
-            if($xlsdata['typefileupload']=='ip'){
-                $sql = "
-                DELETE FROM `ipdata` WHERE `ipdata`.`exsfile` = '".$xlsdata['exsfile']."'
-                ";
-                $query_del = Yii::$app->db->createCommand($sql)->execute();
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $codes = $this->isProvincialAdmin()
+                ? Yii::$app->facilityAccess->provincialFacilityCodes()
+                : Yii::$app->facilityAccess->visibleFacilityCodes(true);
+            $criteria = ['exsfile' => $fileName];
+            if ($model->typefileupload === 'ip' || $model->typefileupload === 'op pp') {
+                $criteria['hospcode'] = $codes;
+            } elseif ($model->typefileupload === 'fwfhealth') {
+                Yii::$app->facilityAccess->requirePermission('manageFwfData');
+                $criteria['hcode'] = $codes;
+            } elseif ($model->typefileupload === 'fwfdata') {
+                Yii::$app->facilityAccess->requirePermission('manageFwfData');
+                $criteria['FundHolderID'] = $codes;
+            } elseif ($model->typefileupload !== 'insurance') {
+                throw new \yii\web\ForbiddenHttpException('ไม่มีสิทธิ์ลบข้อมูลนำเข้าประเภทนี้');
             }
-            if($xlsdata['typefileupload']=='op pp'){
-                $sql = "
-                DELETE FROM `opdata` WHERE `opdata`.`exsfile` = '".$xlsdata['exsfile']."'
-                ";
-                $query_del = Yii::$app->db->createCommand($sql)->execute();
-            }
-            if($xlsdata['typefileupload']=='fwfhealth'){
-                $sql = "
-                DELETE FROM `fwfhealth` WHERE `fwfhealth`.`exsfile` = '".$xlsdata['exsfile']."'
-                ";
-                $query_del = Yii::$app->db->createCommand($sql)->execute();
-            }
-            if($xlsdata['typefileupload']=='fwfdata'){
-                $sql = "
-                DELETE FROM `fwfdatabase` WHERE `fwfdatabase`.`exsfile` = '".$xlsdata['exsfile']."'
-                ";
-                $query_del = Yii::$app->db->createCommand($sql)->execute();
-            }    
-                $result="ลบข้อมูลสำเร็จ";
-            }else{
-                $result="ลบข้อมูลไม่สำเร็จ"; 
-            }
-            
-        $delete = Yii::getAlias('@webroot').'/'.'uploads'.'/'.$xlsdata['exsfile'];
-        @unlink($delete);
 
-        $this->findModel($id)->delete();
+            $table = [
+                'ip' => 'ipdata',
+                'op pp' => 'opdata',
+                'fwfhealth' => 'fwfhealth',
+                'fwfdata' => 'fwfdatabase',
+            ][$model->typefileupload] ?? null;
+            if ($table !== null) {
+                Yii::$app->db->createCommand()->delete($table, $criteria)->execute();
+            }
+            if (!$model->delete()) {
+                throw new \RuntimeException('ไม่สามารถลบรายการอัปโหลดได้');
+            }
+            $transaction->commit();
+        } catch (\Throwable $exception) {
+            $transaction->rollBack();
+            Yii::error($exception->getMessage(), __METHOD__);
+            throw $exception;
+        }
+
+        $filePath = Yii::getAlias('@webroot/uploads/' . $fileName);
+        if (is_file($filePath) && !unlink($filePath)) {
+            Yii::error('ไม่สามารถลบไฟล์อัปโหลด ' . $fileName, __METHOD__);
+            Yii::$app->session->setFlash('error', 'ลบรายการแล้ว แต่ไม่สามารถลบไฟล์ออกจากระบบได้ กรุณาติดต่อผู้ดูแล');
+            return $this->redirect(['index']);
+        }
         return $this->redirect(['index']);
     }
 
@@ -198,10 +227,12 @@ class XlsfileuploadsController extends BaseController
      * @return Xlsfileuploads the loaded model
      * @throws NotFoundHttpException if the model cannot be found
      */
-    protected function findModel($id)
+    protected function findModel($id, bool $forWrite = false)
     {
         if (($model = Xlsfileuploads::findOne($id)) !== null) {
-            return $model;
+            if (Yii::$app->facilityAccess->canAccessFacility((string)$model->hoscode, $forWrite)) {
+                return $model;
+            }
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');

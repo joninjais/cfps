@@ -11,11 +11,15 @@ class RpstlistController extends BaseController
     {
         $session = Yii::$app->session;
         $hoscode=$session['hoscode'];
+        $facilityCodesSql = $this->facilityCodesSql();
 
         $data = Yii::$app->request->get();
         $date1 = $data['date1'] ?? '';
         $date2 = $data['date2'] ?? '';
         $rpst = $data['rpst'] ?? '';
+        if ($rpst !== '' && !Yii::$app->facilityAccess->canAccessFacility((string)$rpst)) {
+            throw new \yii\web\ForbiddenHttpException('ไม่มีสิทธิ์ดูข้อมูลหน่วยบริการที่เลือก');
+        }
   
   
         $sql = "
@@ -37,7 +41,7 @@ class RpstlistController extends BaseController
         )
    
            and opdata.FundHolderID <> 'ccccc'
-       and opdata.FundHolderID='$hoscode'
+       and opdata.FundHolderID IN ($facilityCodesSql)
        and opdata.hospcode='$rpst'
 
 

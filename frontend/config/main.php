@@ -17,6 +17,9 @@ return [
     'bootstrap' => ['log'],
     'controllerNamespace' => 'frontend\controllers',
     'components' => [
+        'facilityAccess' => [
+            'class' => 'frontend\components\FacilityAccess',
+        ],
         'request' => [
             'csrfParam' => '_csrf-frontend',
             'csrfCookie' => ['httpOnly' => true, 'secure' => $isHttps],

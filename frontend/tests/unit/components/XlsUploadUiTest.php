@@ -115,6 +115,7 @@ class XlsUploadUiTest extends TestCase
             'searchModel' => new XlsfileuploadsSearch(),
         ]);
         self::assertStringContainsString('รอนำเข้า', $html);
+        self::assertStringContainsString('แสดงเฉพาะไฟล์ของรหัสสถานบริการที่เข้าสู่ระบบ', $html);
         self::assertStringContainsString('opdatainfo%2Fimport', $html);
         self::assertStringContainsString('ดาวน์โหลดไฟล์', $html);
         self::assertStringContainsString('เตรียมนำเข้าอีกครั้ง', $html);

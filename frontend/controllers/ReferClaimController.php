@@ -11,12 +11,10 @@ use yii\web\NotFoundHttpException;
 
 /**
  * ReferClaimController — บันทึก/แก้ไข/ลบ ข้อมูลตาราง refer_claim
- * ใช้ได้เฉพาะผู้ใช้ที่ hoscode = 00064 (สสจ.)
+ * ใช้ได้เฉพาะผู้ดูแลระบบระดับจังหวัด
  */
 class ReferClaimController extends BaseController
 {
-    const ADMIN_HOSCODE = '00064';
-
     public function behaviors()
     {
         return [
@@ -33,12 +31,7 @@ class ReferClaimController extends BaseController
             return false;
         }
 
-        if (Yii::$app->session->get('hoscode') !== self::ADMIN_HOSCODE) {
-            Yii::$app->session->setFlash('error', 'เฉพาะผู้ใช้ สสจ. (00064) เท่านั้นที่มีสิทธิ์ใช้งานส่วนนี้');
-            Yii::$app->response->redirect(['/site/index'])->send();
-            return false;
-        }
-
+        Yii::$app->facilityAccess->requirePermission('manageReferClaims');
         return true;
     }
 

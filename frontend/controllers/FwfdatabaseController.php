@@ -29,6 +29,7 @@ class FwfdatabaseController extends BaseController
                 'class' => VerbFilter::class,
                 'actions' => [
                     'delete' => ['POST'],
+                    'import' => ['POST'],
                 ],
             ],
         ];
@@ -40,25 +41,31 @@ class FwfdatabaseController extends BaseController
      */
     public function actionIndex()
     {
+        $data = Yii::$app->request->post();
+        $del = $data['del'] ?? '';
+        $chk = $data['chk'] ?? '';
+        if ($del === 'deletedata' || $chk === 'checkdata') {
+            Yii::$app->facilityAccess->requirePermission('manageFwfData');
+        }
+
         $searchModel = new FwfdatabaseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $facilityCodes = $this->isProvincialAdmin()
+            ? Yii::$app->facilityAccess->provincialFacilityCodes()
+            : Yii::$app->facilityAccess->visibleFacilityCodes();
+        $facilityCodesSql = $this->facilityCodesSql();
 
         $session = Yii::$app->session;
         $checklogin = User::findOne(['user'=>$session['user'],]);
 
-        $data = Yii::$app->request->get();
-        $del = $data['del'] ?? '';
-        $chk = $data['chk'] ?? '';
-
         //ลบข้อมูล
         if($del==="deletedata"){
 
-        $sql = "
-        TRUNCATE TABLE fwfdatabase
-        ";
-        $query_del = Yii::$app->db->createCommand($sql)->execute();
-
-                    $result="ลบข้อมูลสำเร็จ";
+            $query_del = Yii::$app->db->createCommand()->delete(
+                'fwfdatabase',
+                ['FundHolderID' => $facilityCodes]
+            )->execute();
+            $result="ลบข้อมูลสำเร็จ";
         }else{
          
             $result="ลบข้อมูลไม่สำเร็จ"; }
@@ -84,6 +91,7 @@ class FwfdatabaseController extends BaseController
             $fwfRows = (new \yii\db\Query())
                 ->select(['CID', 'FundHolderID', 'PeriodStartDate', 'PeriodEndDate'])
                 ->from('fwfdatabase')
+                ->where(['FundHolderID' => $facilityCodes])
                 ->all();
 
             $insertRows = [];
@@ -110,6 +118,7 @@ class FwfdatabaseController extends BaseController
                         AND opdata.dateserv BETWEEN fwf.PeriodStartDate AND fwf.PeriodEndDate
                     SET opdata.FundHolderID = fwf.FundHolderID
                     WHERE (opdata.FundHolderID = 'ccccc' OR opdata.FundHolderID = '')
+                    AND opdata.hospcode IN ({$facilityCodesSql})
                     AND LENGTH(opdata.fund) = 5
                     AND LENGTH(opdata.cid) = 13
                     AND opdata.icd10 <> ''
@@ -123,6 +132,7 @@ class FwfdatabaseController extends BaseController
                         AND ipdata.admitdate BETWEEN fwf.PeriodStartDate AND fwf.PeriodEndDate
                     SET ipdata.FundHolderID = fwf.FundHolderID
                     WHERE (ipdata.FundHolderID = 'ccccc' OR ipdata.FundHolderID = '')
+                    AND ipdata.hospcode IN ({$facilityCodesSql})
                     AND LENGTH(ipdata.fund) = 5
                     AND LENGTH(ipdata.cid) = 13
                     AND ipdata.icd10 <> ''
@@ -163,10 +173,16 @@ class FwfdatabaseController extends BaseController
      */
     public function actionCreate()
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
         $model = new Fwfdatabase();
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+        if ($model->load(Yii::$app->request->post())) {
+            if (!Yii::$app->facilityAccess->canAccessFacility((string)$model->FundHolderID, true)) {
+                throw new \yii\web\ForbiddenHttpException('ไม่มีสิทธิ์จัดการข้อมูลหน่วยบริการนี้');
+            }
+            if ($model->save()) {
             return $this->redirect(['view', 'id' => $model->fwfid]);
+            }
         }
 
         return $this->render('create', [
@@ -174,50 +190,67 @@ class FwfdatabaseController extends BaseController
         ]);
     }    public function actionImport($id)
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
 
-        $xlsid = Yii::$app->request->get();
-        $xlsid = $xlsid['id'] ?? '';
-        $stimpdat=date('Y-m-d,h:i:s');
-        \Yii::$app->db->createCommand()->update('xlsfileuploads', ['startdatetime' => $stimpdat], 'xlsid = '.$xlsid)->execute();
+        $xlsid = (int)Yii::$app->request->post('id', $id);
         $xlsdata = (new \yii\db\Query())
             ->from('xlsfileuploads')
             ->where(['xlsid' => $xlsid])
             ->one();
+        $ownershipError = $this->checkImportOwnership($xlsdata, []);
+        if ($ownershipError !== null || ($xlsdata['typefileupload'] ?? null) !== 'fwfdata') {
+            Yii::$app->session->addFlash('error', $ownershipError ?? 'ประเภทไฟล์ไม่รองรับการนำเข้าข้อมูล FWF');
+            return $this->redirect(['index']);
+        }
 
-        try{
-            $file = Yii::getAlias('@webroot').'/'.'uploads'.'/'.$xlsdata['exsfile'];
-            // $inputFile = \PHPExcel_IOFactory::identify($file);
-            // $objReader = \PHPExcel_IOFactory::createReader($inputFile);
-
+        $file = Yii::getAlias('@webroot') . '/uploads/' . basename($xlsdata['exsfile']);
+        if (!is_file($file)) {
+            Yii::$app->session->addFlash('error', 'ไม่พบไฟล์ Excel ในระบบ');
+            return $this->redirect(['index']);
+        }
+        try {
             $inputFile = IOFactory::identify($file);
-            $objReader = IOFactory::createReader($inputFile);               
+            $objReader = IOFactory::createReader($inputFile);
             $objPHPExcel = $objReader->load($file);
-        }catch (Exception $e){
-            Yii::$app->session->addFlash('error', 'เกิดข้อผิดพลาด'. $e->getMessage());
-        } 
-            $sheet = $objPHPExcel->getSheet(0);
-            $highestRow = $sheet->getHighestRow(); //จำนวนแถวสูงสุด ในไฟล์ excel
-            $highestColumn = $sheet->getHighestColumn();
-    
-            $objWorksheet = $objPHPExcel->getActiveSheet();
+        } catch (\Throwable $exception) {
+            Yii::error($exception->getMessage(), __METHOD__);
+            Yii::$app->session->addFlash('error', 'ไม่สามารถอ่านไฟล์นำเข้าได้');
+            return $this->redirect(['index']);
+        }
+        $sheet = $objPHPExcel->getSheet(0);
+        $highestRow = $sheet->getHighestRow();
+        $highestColumn = $sheet->getHighestColumn();
+        $data = [];
+        $hospcodes = [];
+        for ($row = 2; $row <= $highestRow; $row++) {
+            $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row)[0] ?? [];
+            if (trim((string)($rowData[0] ?? '')) === '') {
+                continue;
+            }
+            $data[] = [$rowData];
+            $facilityCode = trim((string)($rowData[4] ?? ''));
+            if ($facilityCode !== '') {
+                $hospcodes[$facilityCode] = true;
+            }
+        }
+        if ($data === []) {
+            Yii::$app->session->addFlash('error', 'ไม่พบข้อมูลในไฟล์นำเข้า');
+            return $this->redirect(['index']);
+        }
 
+        $ownershipError = $this->checkImportOwnership($xlsdata, $hospcodes);
+        if ($ownershipError !== null) {
+            Yii::$app->session->addFlash('error', $ownershipError);
+            return $this->redirect(['index']);
+        }
 
-                for ($row = 2; $row <= $highestRow; $row++){ 
-                    
-                    $arr1[] = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row);
-                }
-                foreach($arr1 as $key => $element) {  
-                    if($arr1[$key][0][0]<>''){ $hkey = $key; } 
-                } 
-                $highkey=$hkey+1; //จำนวนแถวสูงสุดหลังจากตัดค่าว่าง
-                
-                for ($row = 2; $row <= $highkey+1; $row++){ 
-                    
-                    $data[] = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row);
-                }
+        Yii::$app->db->createCommand()->update(
+            'xlsfileuploads',
+            ['startdatetime' => date('Y-m-d H:i:s')],
+            ['xlsid' => $xlsid]
+        )->execute();
 
-                foreach ($data as $key => $val) {
-
+        foreach ($data as $key => $val) {
                     $source_s = $data[$key][0][1];
                     $date_s = new \DateTime($source_s);
                     $sdate = $date_s->format('Y-m-d'); 
@@ -234,7 +267,10 @@ class FwfdatabaseController extends BaseController
                     $PeriodStartDate = $sdate;  
                     $PeriodEndDate = $edate;
                     $CID = $data[$key][0][3];
-                    $FundHolderID = $data[$key][0][4];
+                    $FundHolderID = trim((string)$data[$key][0][4]);
+                    if (ctype_digit($FundHolderID)) {
+                        $FundHolderID = str_pad($FundHolderID, 5, '0', STR_PAD_LEFT);
+                    }
                     // $fname = $data[$key][0][5];
                     $fname = $data[$key][0][5] ?? '-';
                     // $lname = $data[$key][0][6];
@@ -299,10 +335,12 @@ class FwfdatabaseController extends BaseController
                     ])->execute();
                     }
                   }//foreach    
-                  $endimpdat=date('Y-m-d,h:i:s');
-                  \Yii::$app->db->createCommand()->update('xlsfileuploads', ['enddatetime' => $endimpdat], 'xlsid = '.$xlsid)->execute();
-
-                  \Yii::$app->db->createCommand()->update('xlsfileuploads', ['importstatus' => 1], 'xlsid = '.$xlsid)->execute();
+                  $endimpdat = date('Y-m-d H:i:s');
+                  Yii::$app->db->createCommand()->update(
+                      'xlsfileuploads',
+                      ['enddatetime' => $endimpdat, 'importstatus' => 1],
+                      ['xlsid' => $xlsid]
+                  )->execute();
                 return $this->redirect(['fwfdatabase/index']);
 
 /*
@@ -324,10 +362,16 @@ class FwfdatabaseController extends BaseController
      */
     public function actionUpdate($id)
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->fwfid]);
+        if ($model->load(Yii::$app->request->post())) {
+            if (!Yii::$app->facilityAccess->canAccessFacility((string)$model->FundHolderID, true)) {
+                throw new \yii\web\ForbiddenHttpException('ไม่มีสิทธิ์จัดการข้อมูลหน่วยบริการนี้');
+            }
+            if ($model->save()) {
+                return $this->redirect(['view', 'id' => $model->fwfid]);
+            }
         }
 
         return $this->render('update', [
@@ -344,6 +388,7 @@ class FwfdatabaseController extends BaseController
      */
     public function actionDelete($id)
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
         $this->findModel($id)->delete();
 
         return $this->redirect(['index']);
@@ -359,7 +404,9 @@ class FwfdatabaseController extends BaseController
     protected function findModel($id)
     {
         if (($model = Fwfdatabase::findOne($id)) !== null) {
-            return $model;
+            if (Yii::$app->facilityAccess->canAccessFacility((string)$model->FundHolderID)) {
+                return $model;
+            }
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');

@@ -80,5 +80,47 @@ The insurance dashboard filters all summaries by purchase date, defaulting to
 the current Thai fiscal year (October through September). Select a fiscal year,
 an individual month, or all periods; all periods also includes records without
 a purchase date.
-Users at agency `00064` can also filter the dashboard by a single agency or
-view all agencies; other users cannot select an agency.
+Provincial administrators can filter the dashboard by a single agency or view
+all agencies; other users cannot select an agency.
+
+The uploaded-file list shows only records whose facility code matches the
+signed-in account, including for provincial administrators. Existing
+facility-scoped permissions for file operations and imports are unchanged.
+
+### User access and approval
+
+The frontend uses Yii RBAC roles with facility-scoped data access:
+
+| Role | Read scope | Write and management scope |
+| --- | --- | --- |
+| Provincial administrator (`provincialAdmin`) | Facilities with the same `provcode` as the administrator's facility | Province-wide administrative actions |
+| Delegated user manager (`userManager`, added on top of the facility role) | Same as its hospital/PCU staff role | Same as its facility role, plus managing ordinary user accounts in the province of facility `00064` |
+| Hospital staff (`hospitalStaff`) | Own facility and facilities sharing its `cupcode` | Own facility only |
+| PCU staff (`pcuStaff`) | Own facility only | Own facility only |
+
+Self-registered accounts remain pending and cannot sign in until approved by a
+provincial administrator. The account at facility `00064` can grant or remove
+the delegated `userManager` role. It is assigned in addition to the account's
+hospital/PCU role, so these users keep the normal facility home page and data
+access and gain only the user-management menu. They cannot manage other
+administrator accounts or grant administrator roles, and may change their own
+facility code only within the province associated with `00064`. Accounts are restricted to that province. Staff role assignment is checked against
+`chospital2.cupcode`: a facility whose `cupcode` equals its own `hospcode` is a
+hospital; other facilities are PCUs. Existing accounts are marked approved by
+the RBAC migration, and existing `hoscode=00064` accounts receive the
+provincial administrator role.
+
+Before deploying, back up the database and verify the `chospital2` province and
+CUP mappings for existing accounts. Apply the Yii RBAC migrations and the
+application access-control migrations with `php yii migrate`. The delegated
+user-manager migration converts previously delegated `provincialAdmin`
+assignments (all except accounts at facility `00064`) to the facility role plus
+`userManager`. Do not run migrations against production until the
+account-to-facility mapping has been reviewed and the database backed up.
+
+Deleting a user hides the account from user management, revokes its roles, and
+blocks both new logins and existing sessions. The user record remains in the
+database, and signup continues to reject its username and email. Apply the user
+soft-delete migration with `php yii migrate` before deploying this change. Its
+rollback is blocked while deleted accounts exist, to avoid accidentally
+re-enabling them.

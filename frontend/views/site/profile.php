@@ -5,6 +5,7 @@ use yii\helpers\Html;
 /* @var $user frontend\models\User */
 /* @var $error string|null */
 /* @var $success string|null */
+/* @var $facilityName string|null */
 
 $this->title = 'ข้อมูลส่วนตัว';
 ?>
@@ -61,11 +62,11 @@ $this->title = 'ข้อมูลส่วนตัว';
                         </div>
 
                         <div class="form-group">
-                            <label class="control-label" for="orgname">ชื่อหน่วยบริการ</label>
+                            <label class="control-label" for="orgname">ชื่อหน่วยบริการ (อ้างอิงจากรหัสสถานพยาบาล)</label>
                             <div class="input-group">
                                 <span class="input-group-addon"><i class="fa fa-hospital-o"></i></span>
-                                <input type="text" id="orgname" name="orgname" class="form-control"
-                                       value="<?= Html::encode($user->orgname ?? '') ?>" maxlength="255">
+                                <input type="text" id="orgname" class="form-control"
+                                       value="<?= Html::encode($facilityName ?? '') ?>" readonly>
                             </div>
                         </div>
 

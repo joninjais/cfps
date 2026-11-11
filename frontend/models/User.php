@@ -18,9 +18,16 @@ use yii\web\IdentityInterface;
  * @property string $hoscode     รหัสหน่วยบริการ
  * @property string $phonenumber เบอร์โทรศัพท์
  * @property string $email       อีเมล
+ * @property int    $is_deleted สถานะการลบ
  */
 class User extends \yii\db\ActiveRecord implements IdentityInterface
 {
+    public const APPROVAL_PENDING = 'pending';
+    public const APPROVAL_APPROVED = 'approved';
+    public const APPROVAL_REJECTED = 'rejected';
+    public const NOT_DELETED = 0;
+    public const DELETED = 1;
+
     public $newPassword;
     public $newPasswordConfirm;
 
@@ -71,6 +78,12 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
                 'message' => 'รหัสผ่านและการยืนยันต้องตรงกัน'
             ],
             [['must_change_password'], 'integer'],
+            [['approval_status'], 'in', 'range' => [
+                self::APPROVAL_PENDING,
+                self::APPROVAL_APPROVED,
+                self::APPROVAL_REJECTED,
+            ]],
+            [['requested_role'], 'in', 'range' => ['provincialAdmin', 'userManager', 'hospitalStaff', 'pcuStaff']],
         ];
     }
 
@@ -93,6 +106,8 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             'newPassword'         => 'รหัสผ่านใหม่',
             'newPasswordConfirm'  => 'ยืนยันรหัสผ่าน',
             'must_change_password'=> 'ต้องเปลี่ยนรหัสผ่าน',
+            'approval_status'     => 'สถานะอนุมัติ',
+            'requested_role'      => 'ประเภทผู้ใช้งานที่ขอ',
         ];
     }
 
@@ -102,7 +117,11 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public static function findIdentity($id)
     {
-        return static::findOne(['userid' => $id]);
+        return static::findOne([
+            'userid' => $id,
+            'approval_status' => self::APPROVAL_APPROVED,
+            'is_deleted' => self::NOT_DELETED,
+        ]);
     }
 
     /**
@@ -150,7 +169,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public static function findByUsername($username)
     {
-        return static::findOne(['user' => $username]);
+        return static::findOne(['user' => $username, 'is_deleted' => self::NOT_DELETED]);
     }
 
     /**

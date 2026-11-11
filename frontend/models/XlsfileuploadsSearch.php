@@ -6,6 +6,7 @@ use Yii;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use frontend\models\Xlsfileuploads;
+use yii\web\ForbiddenHttpException;
 
 /**
  * XlsfileuploadsSearch represents the model behind the search form of `frontend\models\Xlsfileuploads`.
@@ -43,7 +44,11 @@ class XlsfileuploadsSearch extends Xlsfileuploads
     {
         $query = Xlsfileuploads::find();
 
-        // add conditions that should always apply here
+        $hoscode = trim((string)(Yii::$app->user->identity->hoscode ?? ''));
+        if ($hoscode === '') {
+            throw new ForbiddenHttpException('ไม่พบรหัสหน่วยบริการของบัญชี');
+        }
+        $query->andWhere(['hoscode' => $hoscode]);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -61,11 +66,8 @@ class XlsfileuploadsSearch extends Xlsfileuploads
         $query->andFilterWhere([
             'xlsid' => $this->xlsid,
         ]);
-        $session = Yii::$app->session;
-        $user=$session['user'];
-        $hoscode=$session['hoscode'];
         $query->andFilterWhere(['like', 'exsfile', $this->exsfile])
-            ->andFilterWhere(['like', 'hoscode', $hoscode])
+            ->andFilterWhere(['like', 'hoscode', $this->hoscode])
             ->andFilterWhere(['like', 'uploaddatetime', $this->uploaddatetime])
             ->andFilterWhere(['like', 'typefileupload', $this->typefileupload])
             // ->andFilterWhere(['like', 'user', $user])

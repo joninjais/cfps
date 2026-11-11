@@ -10,6 +10,7 @@ class FwfhealthclientController extends BaseController
     {
         $session = Yii::$app->session;
         $hoscode=$session['hoscode'];
+        $facilityCodesSql = $this->facilityCodesSql();
         
         $data = Yii::$app->request->get();
         
@@ -68,7 +69,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg-10%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -123,7 +124,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg-11%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -179,7 +180,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg-12%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -235,7 +236,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg1-01%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -290,7 +291,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg1-02%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -345,7 +346,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg1-03%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -400,7 +401,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg1-04%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -456,7 +457,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg1-05%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -511,7 +512,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg1-06%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -566,7 +567,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg1-07%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -621,7 +622,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg1-08%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -676,7 +677,7 @@ class FwfhealthclientController extends BaseController
                     and fwfhealth.datev = fwfdatabase.regisdate
         left join chospital2 on fwfhealth.hcode = chospital2.hospcode
         
-          WHERE fwfhealth.hcode='$hoscode'
+          WHERE fwfhealth.hcode IN ($facilityCodesSql)
             and fwfhealth.datev like '$yg1-09%'
             -- and fwfhealth.check_card='pass'
             )as q
@@ -736,7 +737,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg-10%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -791,7 +792,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg-11%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -847,7 +848,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg-12%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -903,7 +904,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg1-01%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -958,7 +959,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg1-02%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -1013,7 +1014,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg1-03%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -1068,7 +1069,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg1-04%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -1124,7 +1125,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg1-05%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -1179,7 +1180,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg1-06%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -1234,7 +1235,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg1-07%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -1289,7 +1290,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg1-08%'
     -- and fwfhealth.check_card='pass'
     )as q
@@ -1344,7 +1345,7 @@ inner join fwfdatabase on fwfhealth.cid = fwfdatabase.CID
             and fwfhealth.datev = fwfdatabase.regisdate
 left join chospital2 on fwfhealth.hcode = chospital2.hospcode
 
-  WHERE fwfhealth.hcode='$hoscode'
+  WHERE fwfhealth.hcode IN ($facilityCodesSql)
     and fwfhealth.datev like '$yg1-09%'
     -- and fwfhealth.check_card='pass'
     )as q

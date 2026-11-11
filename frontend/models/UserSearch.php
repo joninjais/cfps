@@ -22,7 +22,8 @@ class UserSearch extends User
 
     public function search($params)
     {
-        $query = User::find();
+        $query = User::find()->where(['is_deleted' => User::NOT_DELETED]);
+        $query->andWhere(['hoscode' => \Yii::$app->facilityAccess->userManagementFacilityCodes()]);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -39,7 +40,7 @@ class UserSearch extends User
         $query->andFilterWhere(['like', 'user',        $this->user])
               ->andFilterWhere(['like', 'fname',       $this->fname])
               ->andFilterWhere(['like', 'lname',       $this->lname])
-              ->andFilterWhere(['like', 'hoscode',     $this->hoscode])
+              ->andFilterWhere(['hoscode' => trim((string)$this->hoscode)])
               ->andFilterWhere(['like', 'phonenumber', $this->phonenumber])
               ->andFilterWhere(['like', 'email',       $this->email]);
 

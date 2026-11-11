@@ -11,6 +11,7 @@ class PpcController extends BaseController
     {
         $session = Yii::$app->session;
         $hoscode=$session['hoscode'];
+        $facilityCodesSql = $this->facilityCodesSql();
 
         $data = Yii::$app->request->get();
         $date1 = $data['date1'] ?? '';
@@ -22,7 +23,7 @@ class PpcController extends BaseController
         DISTINCT
         opdata.*    
         FROM opdata 
-        WHERE opdata.hospcode = '$hoscode'
+        WHERE opdata.hospcode IN ($facilityCodesSql)
               and op_pp_type = 'pp'              
 			  and opdata.FundHolderID = 'ccccc'
 			  and opdata.dateserv between ':startDate' and ':endDate'

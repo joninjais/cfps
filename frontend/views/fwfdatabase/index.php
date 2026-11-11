@@ -28,8 +28,11 @@ $chk="checkdata";
     <?php // echo Html::a('เพิ่มข้อมูล FWF', ['create'], ['class' => 'btn btn-success']) ?>
     <?php // echo Html::a('ปรับปรุงข้อมูล', ['index','chk' => $chk],['class' => 'btn btn-info']) ?> 
     <?php 
-        if($session['hoscode']=='00064'){
-        echo Html::a('ปรับปรุงข้อมูล', ['index', 'chk' => $chk,],['class' => 'btn btn-info']);
+        if(Yii::$app->facilityAccess->isProvincialAdmin()){
+        echo Html::a('ปรับปรุงข้อมูล', ['index'], [
+            'class' => 'btn btn-info',
+            'data' => ['method' => 'post', 'params' => ['chk' => $chk]],
+        ]);
         }
         ?>
         <?php 

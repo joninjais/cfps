@@ -44,7 +44,7 @@ class InsurancepoliciesSearch extends Insurancepolicies
     {
         $query = Insurancepolicies::find();
 
-        // add conditions that should always apply here
+        Yii::$app->facilityAccess->scopeQuery($query, 'agency_code');
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -67,9 +67,6 @@ class InsurancepoliciesSearch extends Insurancepolicies
             'card_price' => $this->card_price,
             'created_at' => $this->created_at,
         ]);
-
-        $session = Yii::$app->session;
-        $hoscode=$session['hoscode'];
 
         $query->andFilterWhere(['like', 'agency_code', $this->agency_code])
             ->andFilterWhere(['like', 'agency_name', $this->agency_name])

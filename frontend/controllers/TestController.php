@@ -3,7 +3,7 @@
 namespace frontend\controllers;
 use yii;
 
-class TestController extends \yii\web\Controller
+class TestController extends BaseController
 {
     public function actionIndex()
     {

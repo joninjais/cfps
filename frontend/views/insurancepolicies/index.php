@@ -64,8 +64,7 @@ table.db-table tfoot td { background: #00796b; color: #fff; font-weight: 700; }
             'style' => 'display:inline',
         ]) ?>
         <?php 
-        // ตรวจสอบ hospcode ต้องไม่เท่ากับ 00064 ก่อนแสดงปุ่มล้างข้อมูล
-        if ($hoscode !== '00064') {
+        if (!Yii::$app->facilityAccess->isProvincialAdmin()) {
             echo Html::submitButton('<i class="fa fa-trash"></i> ล้างข้อมูลกรมธรรม์', ['class' => 'btn btn-danger']);
         }
         ?>

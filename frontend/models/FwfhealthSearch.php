@@ -43,7 +43,7 @@ class FwfhealthSearch extends Fwfhealth
     {
         $query = Fwfhealth::find();
 
-        // add conditions that should always apply here
+        Yii::$app->facilityAccess->scopeQuery($query, 'hcode');
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,

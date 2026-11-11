@@ -4,6 +4,8 @@ namespace frontend\controllers;
 
 use Yii;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use frontend\models\User;
+use yii\web\ForbiddenHttpException;
 
 /**
  * BaseController — เป็น base class ของทุก controller ใน frontend
@@ -39,21 +41,36 @@ class BaseController extends \yii\web\Controller
         return in_array($value, self::ALLOWED_NATIONS, true) ? $value : null;
     }
 
-    /** รหัสหน่วยบริการของสำนักงานระดับจังหวัด (ผู้ดูแลระบบ) */
-    const PROVINCIAL_HOSCODE = '00064';
-
     /** FundHolderID ที่ไม่ใช้เป็นตัวเลือกแรกเมื่อมีหลาย period ซ้อนกัน */
     const DEPRIORITIZED_FUND_HOLDERS = ['10739', '10740'];
 
     protected function isProvincialAdmin(): bool
     {
-        return trim((string)Yii::$app->session->get('hoscode')) === self::PROVINCIAL_HOSCODE;
+        return Yii::$app->facilityAccess->isProvincialAdmin();
+    }
+
+    protected function facilityCodesSql(bool $forWrite = false): string
+    {
+        if ($this->isProvincialAdmin()) {
+            $codes = Yii::$app->facilityAccess->provincialFacilityCodes();
+        } else {
+            $codes = Yii::$app->facilityAccess->visibleFacilityCodes($forWrite);
+        }
+
+        if ($codes === []) {
+            throw new ForbiddenHttpException('ไม่พบขอบเขตหน่วยบริการที่อนุญาต');
+        }
+
+        return implode(', ', array_map(
+            static fn($code) => Yii::$app->db->quoteValue($code),
+            $codes
+        ));
     }
 
     /**
      * ตรวจสิทธิ์การนำเข้าไฟล์ xlsfileuploads
-     * - บัญชีทั่วไป: ไฟล์ต้องเป็นของ hoscode ตัวเอง และทุกแถวใน Excel ต้องมี hospcode ตรงกับ hoscode ตัวเอง
-     * - บัญชี 00064: นำเข้าได้ทุกหน่วยบริการ
+     * - บัญชีทั่วไป: ไฟล์และทุกแถวต้องอยู่ในหน่วยบริการตนเอง
+     * - ผู้ดูแลระบบระดับจังหวัด: ไฟล์และทุกแถวต้องอยู่ในจังหวัดที่รับผิดชอบ
      * คืนข้อความผิดพลาด หรือ null ถ้าผ่าน
      */
     protected function checkImportOwnership($xlsdata, array $hospcodes): ?string
@@ -61,22 +78,25 @@ class BaseController extends \yii\web\Controller
         if (empty($xlsdata)) {
             return 'ไม่พบไฟล์ที่ต้องการนำเข้า';
         }
-        if ($this->isProvincialAdmin()) {
-            return null;
-        }
+
+        $isAdmin = $this->isProvincialAdmin();
         $mine = trim((string)Yii::$app->session->get('hoscode'));
-        if ($mine === '' || trim((string)($xlsdata['hoscode'] ?? '')) !== $mine) {
+        $allowedCodes = $isAdmin
+            ? Yii::$app->facilityAccess->provincialFacilityCodes()
+            : [$mine];
+        $normalize = static function ($value): string {
+            $value = trim((string)$value);
+            return ctype_digit($value) ? str_pad($value, 5, '0', STR_PAD_LEFT) : $value;
+        };
+        $allowedCodes = array_map($normalize, $allowedCodes);
+
+        if ($mine === '' || !in_array($normalize($xlsdata['hoscode'] ?? ''), $allowedCodes, true)) {
             return 'ไม่มีสิทธิ์นำเข้าไฟล์นี้';
         }
-        $norm = function ($v) {
-            $v = trim((string)$v);
-            // Excel อาจอ่านรหัสเป็นตัวเลข (9113) จึงเติม 0 ให้ครบ 5 หลักก่อนเทียบ
-            return ctype_digit($v) ? str_pad($v, 5, '0', STR_PAD_LEFT) : $v;
-        };
         foreach (array_keys($hospcodes) as $hc) {
-            if ($norm($hc) !== $norm($mine)) {
+            if (!in_array($normalize($hc), $allowedCodes, true)) {
                 return 'ไม่นำเข้าข้อมูล: พบรหัสหน่วยบริการ ' . trim((string)$hc)
-                    . ' ในไฟล์ ซึ่งไม่ตรงกับหน่วยบริการของท่าน (' . $mine . ')';
+                    . ' ในไฟล์ ซึ่งอยู่นอกขอบเขตหน่วยบริการที่อนุญาต';
             }
         }
         return null;
@@ -157,8 +177,37 @@ class BaseController extends \yii\web\Controller
                 Yii::$app->response->redirect(['/site/login'])->send();
                 return false;
             }
-        }
 
-        return parent::beforeAction($action);
+            $user = User::findIdentity($session->get('userid'));
+            if ($user === null || (string)$user->user !== (string)$session->get('user')) {
+                $session->destroy();
+                $session->open();
+                $session->setFlash('error', 'บัญชีนี้ยังไม่ได้รับอนุมัติหรือถูกระงับ กรุณาติดต่อผู้ดูแลระบบ');
+                Yii::$app->response->redirect(['/site/login'])->send();
+                return false;
+            }
+            $session->set('hoscode', $user->hoscode);
+
+            if (Yii::$app->user->isGuest && !Yii::$app->user->login($user, 0)) {
+                Yii::error('ไม่สามารถกู้คืนสถานะการยืนยันตัวตนของผู้ใช้ ' . $user->userid, __METHOD__);
+                throw new ForbiddenHttpException('ไม่สามารถยืนยันตัวตนของบัญชีนี้ได้');
+            }
+
+            try {
+                Yii::$app->facilityAccess->requireAnyRole(['provincialAdmin', 'userManager', 'hospitalStaff', 'pcuStaff']);
+                Yii::$app->facilityAccess->requirePermission('accessApplication');
+                Yii::$app->facilityAccess->requireFacilityRoleMatches();
+            } catch (ForbiddenHttpException $exception) {
+                Yii::$app->session->setFlash('error', $exception->getMessage());
+                Yii::$app->user->logout(false);
+                $session->destroy();
+                $session->open();
+                Yii::$app->response->redirect(['/site/login'])->send();
+                return false;
+            }
+
+            }
+
+            return parent::beforeAction($action);
     }
 }

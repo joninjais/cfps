@@ -11,6 +11,7 @@ class OpcController extends BaseController
     {
         $session = Yii::$app->session;
         $hoscode=$session['hoscode'];
+        $facilityCodesSql = $this->facilityCodesSql();
 
         $data = Yii::$app->request->get();
         $date1 = $data['date1'] ?? '';
@@ -25,7 +26,7 @@ class OpcController extends BaseController
         FROM
         opdata
         WHERE
-        opdata.hospcode = '$hoscode'
+        opdata.hospcode IN ($facilityCodesSql)
         and opdata.FundHolderID = 'ccccc'
         and opdata.dateserv between ':startDate' and ':endDate'
         and op_pp_type = 'op'

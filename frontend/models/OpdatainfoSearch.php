@@ -43,7 +43,7 @@ class OpdatainfoSearch extends Opdata
     {
         $query = Opdata::find();
 
-        // add conditions that should always apply here
+        Yii::$app->facilityAccess->scopeQuery($query, 'hospcode');
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -65,10 +65,7 @@ class OpdatainfoSearch extends Opdata
             'opid' => $this->opid,
             'dateserv' => $this->dateserv,
         ]);
-        $session = Yii::$app->session;
-        $hoscode=$session['hoscode'];
-
-        $query->andFilterWhere(['like', 'hospcode', $hoscode])
+        $query->andFilterWhere(['like', 'hospcode', $this->hospcode])
             ->andFilterWhere(['like', 'name', $this->name])
             ->andFilterWhere(['like', 'fund', $this->fund])
             ->andFilterWhere(['like', 'cid', $this->cid])

@@ -24,6 +24,7 @@ class FwfhealthController extends BaseController
                 'class' => VerbFilter::class,
                 'actions' => [
                     'delete' => ['POST'],
+                    'import' => ['POST'],
                 ],
             ],
         ];
@@ -59,53 +60,62 @@ class FwfhealthController extends BaseController
 
     public function actionImport($id)
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
 
-        $xlsid = Yii::$app->request->get();
-        $xlsid = $xlsid['id'] ?? '';
-        
-        $stimpdat=date('Y-m-d,h:i:s');
-        \Yii::$app->db->createCommand()->update('xlsfileuploads', ['startdatetime' => $stimpdat], 'xlsid = '.$xlsid)->execute();
+        $xlsid = (int)Yii::$app->request->post('id', $id);
 
         $xlsdata = (new \yii\db\Query())
             ->from('xlsfileuploads')
             ->where(['xlsid' => $xlsid])
             ->one();
+        $ownershipError = $this->checkImportOwnership($xlsdata, []);
+        if ($ownershipError !== null || ($xlsdata['typefileupload'] ?? null) !== 'fwfhealth') {
+            Yii::$app->session->addFlash('error', $ownershipError ?? 'ประเภทไฟล์ไม่รองรับการนำเข้าข้อมูลบัตร');
+            return $this->redirect(['index']);
+        }
 
-        try{
-            $file = Yii::getAlias('@webroot').'/'.'uploads'.'/'.$xlsdata['exsfile'];
-            // $inputFile = \PHPExcel_IOFactory::identify($file);
-            // $objReader = \PHPExcel_IOFactory::createReader($inputFile);
-
+        $file = Yii::getAlias('@webroot') . '/uploads/' . basename($xlsdata['exsfile']);
+        try {
             $inputFile = IOFactory::identify($file);
-            $objReader = IOFactory::createReader($inputFile);   
+            $objReader = IOFactory::createReader($inputFile);
             $objPHPExcel = $objReader->load($file);
-        }catch (Exception $e){
-            Yii::$app->session->addFlash('error', 'เกิดข้อผิดพลาด'. $e->getMessage());
-        } 
-            $sheet = $objPHPExcel->getSheet(0);
-            $highestRow = $sheet->getHighestRow(); //จำนวนแถวสูงสุด ในไฟล์ excel
-            $highestColumn = $sheet->getHighestColumn();
-    
-            $objWorksheet = $objPHPExcel->getActiveSheet();
+        } catch (\Throwable $exception) {
+            Yii::error($exception->getMessage(), __METHOD__);
+            Yii::$app->session->addFlash('error', 'ไม่สามารถอ่านไฟล์นำเข้าได้');
+            return $this->redirect(['index']);
+        }
 
+        $sheet = $objPHPExcel->getSheet(0);
+        $highestRow = $sheet->getHighestRow();
+        $highestColumn = $sheet->getHighestColumn();
+        $hospcodes = [];
+        for ($row = 2; $row <= $highestRow; $row++) {
+            $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row)[0] ?? [];
+            $hcode = trim((string)($rowData[1] ?? ''));
+            if (ctype_digit($hcode)) {
+                $hcode = str_pad($hcode, 5, '0', STR_PAD_LEFT);
+            }
+            if ($hcode !== '') {
+                $hospcodes[$hcode] = true;
+            }
+        }
+        $ownershipError = $this->checkImportOwnership($xlsdata, $hospcodes);
+        if ($ownershipError !== null) {
+            Yii::$app->session->addFlash('error', $ownershipError);
+            return $this->redirect(['index']);
+        }
 
-                for ($row = 2; $row <= $highestRow; $row++){ 
-                    
-                    $arr1[] = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row);
-                }
-                foreach($arr1 as $key => $element) {  
-                    if($arr1[$key][0][0]<>''){ $hkey = $key; } 
-                } 
-                $highkey=$hkey+1; //จำนวนแถวสูงสุดหลังจากตัดค่าว่าง
-                
-                for ($row = 2; $row <= $highkey+1; $row++){ 
-                    
-                    $data[] = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row);
-                }
+        Yii::$app->db->createCommand()->update(
+            'xlsfileuploads',
+            ['startdatetime' => date('Y-m-d H:i:s')],
+            ['xlsid' => $xlsid]
+        )->execute();
 
-                foreach ($data as $key => $val) {
+        for ($row = 2; $row <= $highestRow; $row++) {
+            $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row)[0] ?? [];
+
 /*
-                    $ad_y = substr($data[$key][0][1],0,4);
+                    $ad_y = substr($rowData[1],0,4);
                     $ad_m = substr($data[$key][0][1],5,2); 
                     $ad_d = substr($data[$key][0][1],8,2);
                     $addate = ($ad_y-543).'-'.$ad_m.'-'.$ad_d; 
@@ -115,25 +125,28 @@ class FwfhealthController extends BaseController
                     $dc_d = substr($data[$key][0][2],8,2);
                     $dcdate = ($dc_y-543).'-'.$dc_m.'-'.$dc_d; 
 */
-                    $datev = $data[$key][0][0];
-                    $hcode = $data[$key][0][1];  
-                    $cid = $data[$key][0][2];
-                    $prefix = $data[$key][0][3];
-                    $fname = $data[$key][0][4];
-                    $lname = $data[$key][0][5];
-                    $birthday = $data[$key][0][6];
-                    $nation = $data[$key][0][7];
-                    $type_mg = $data[$key][0][8];
-                    $sex = $data[$key][0][9];
-                    $address = $data[$key][0][10];
-                    $company = $data[$key][0][11];
-                    $bossname = $data[$key][0][12]; 
-                    $telephone = $data[$key][0][13]; 
-                    $hn = $data[$key][0][14]; 
-                    $vn = $data[$key][0][15]; 
-                    $card_id = $data[$key][0][16]; 
-                    $typehealth_id = $data[$key][0][18]; 
-                    $diesease_id = $data[$key][0][19]; 
+                    $datev = $rowData[0];
+                    $hcode = trim((string)($rowData[1] ?? ''));
+                    if (ctype_digit($hcode)) {
+                        $hcode = str_pad($hcode, 5, '0', STR_PAD_LEFT);
+                    }
+                    $cid = $rowData[2];
+                    $prefix = $rowData[3];
+                    $fname = $rowData[4];
+                    $lname = $rowData[5];
+                    $birthday = $rowData[6];
+                    $nation = $rowData[7];
+                    $type_mg = $rowData[8];
+                    $sex = $rowData[9];
+                    $address = $rowData[10];
+                    $company = $rowData[11];
+                    $bossname = $rowData[12];
+                    $telephone = $rowData[13];
+                    $hn = $rowData[14];
+                    $vn = $rowData[15];
+                    $card_id = $rowData[16];
+                    $typehealth_id = $rowData[18];
+                    $diesease_id = $rowData[19];
 
 
 
@@ -141,16 +154,17 @@ class FwfhealthController extends BaseController
                         if(strlen($cid)==13){
                         $datev= date("Y-m-d", strtotime($datev));
 
-                        $sqlcheckfwf = "
-                        SELECT * FROM fwfhealth WHERE fwfhealth.cid = '$cid' 
-                        and fwfhealth.hn = '$hn' 
-                        and fwfhealth.datev = '$datev'
-                        and fwfhealth.vn = '$vn'
-                        ";
+                        $exists = (new \yii\db\Query())
+                            ->from('fwfhealth')
+                            ->where([
+                                'cid' => $cid,
+                                'hn' => $hn,
+                                'datev' => $datev,
+                                'vn' => $vn,
+                            ])
+                            ->exists();
     
-                        $querycheckfwf = Yii::$app->db->createCommand($sqlcheckfwf)->queryAll();
-    
-                        if(empty($querycheckfwf)){
+                        if (!$exists) {
                         
                         Yii::$app->db->createCommand()->insert('fwfhealth', [
                             'datev' => date("Y-m-d", strtotime($datev)),
@@ -183,10 +197,12 @@ class FwfhealthController extends BaseController
                     } //if $cid
 
 
-                  }//foreach    
-                  $endimpdat=date('Y-m-d,h:i:s');
-                  \Yii::$app->db->createCommand()->update('xlsfileuploads', ['enddatetime' => $endimpdat], 'xlsid = '.$xlsid)->execute();
-                  \Yii::$app->db->createCommand()->update('xlsfileuploads', ['importstatus' => 1], 'xlsid = '.$xlsid)->execute();
+        }
+        Yii::$app->db->createCommand()->update(
+            'xlsfileuploads',
+            ['enddatetime' => date('Y-m-d H:i:s'), 'importstatus' => 1],
+            ['xlsid' => $xlsid]
+        )->execute();
                 return $this->redirect(['fwfhealth/index']);
 
 /*
@@ -204,10 +220,16 @@ class FwfhealthController extends BaseController
      */
     public function actionCreate()
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
         $model = new Fwfhealth();
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->fwfhealth_id]);
+        if ($model->load(Yii::$app->request->post())) {
+            if (!Yii::$app->facilityAccess->canAccessFacility((string)$model->hcode, true)) {
+                throw new \yii\web\ForbiddenHttpException('ไม่มีสิทธิ์จัดการข้อมูลหน่วยบริการนี้');
+            }
+            if ($model->save()) {
+                return $this->redirect(['view', 'id' => $model->fwfhealth_id]);
+            }
         }
 
         return $this->render('create', [
@@ -224,10 +246,16 @@ class FwfhealthController extends BaseController
      */
     public function actionUpdate($id)
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->fwfhealth_id]);
+        if ($model->load(Yii::$app->request->post())) {
+            if (!Yii::$app->facilityAccess->canAccessFacility((string)$model->hcode, true)) {
+                throw new \yii\web\ForbiddenHttpException('ไม่มีสิทธิ์จัดการข้อมูลหน่วยบริการนี้');
+            }
+            if ($model->save()) {
+                return $this->redirect(['view', 'id' => $model->fwfhealth_id]);
+            }
         }
 
         return $this->render('update', [
@@ -244,6 +272,7 @@ class FwfhealthController extends BaseController
      */
     public function actionDelete($id)
     {
+        Yii::$app->facilityAccess->requirePermission('manageFwfData');
         $this->findModel($id)->delete();
 
         return $this->redirect(['index']);
@@ -259,7 +288,9 @@ class FwfhealthController extends BaseController
     protected function findModel($id)
     {
         if (($model = Fwfhealth::findOne($id)) !== null) {
-            return $model;
+            if (Yii::$app->facilityAccess->canAccessFacility((string)$model->hcode)) {
+                return $model;
+            }
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');

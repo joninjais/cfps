@@ -14,6 +14,7 @@ class DeptorController extends BaseController
     {
         $session = Yii::$app->session;
         $hoscode = $session['hoscode'];
+        $facilityCodesSql = $this->facilityCodesSql();
 
         $data    = Yii::$app->request->get();
         $date1   = $data['date1'] ?? '';
@@ -82,7 +83,7 @@ class DeptorController extends BaseController
         //  Non-SSJ branch  (individual hospital)
         // =========================================================
         $queryop = [];
-        if ($hoscode !== '00064') {
+        if (!$this->isProvincialAdmin()) {
 
             // ── op aggregate queries ──────────────────────────────
             $sqlop = "
@@ -111,7 +112,7 @@ class DeptorController extends BaseController
                         opdata.FundHolderID AS fundHos
                     FROM opdata
                     LEFT JOIN chospital2 ON opdata.hospcode = chospital2.hospcode
-                    WHERE opdata.FundHolderID = '$hoscode'
+                    WHERE opdata.FundHolderID IN ($facilityCodesSql)
                     AND opdata.FundHolderID <> 'ccccc'
                         AND opdata.dateserv BETWEEN ':startDate' and ':endDate'
                         AND opdata.seq NOT IN (
@@ -152,7 +153,7 @@ class DeptorController extends BaseController
                         opdata.FundHolderID AS fundHos
                     FROM opdata
                     inner JOIN chospital2 ON opdata.hospcode = chospital2.hospcode
-                    WHERE opdata.FundHolderID = '$hoscode'
+                    WHERE opdata.FundHolderID IN ($facilityCodesSql)
                     AND opdata.hospcode != '$hoscode'
                     AND opdata.FundHolderID <> 'ccccc'
                     AND opdata.dateserv BETWEEN ':startDate' and ':endDate'
@@ -197,7 +198,7 @@ class DeptorController extends BaseController
             ipdata
             left join chospital2 on ipdata.hospcode=chospital2.hospcode
             WHERE
-            ipdata.FundHolderID = '$hoscode'
+            ipdata.FundHolderID IN ($facilityCodesSql)
             and ipdata.hospcode != '$hoscode'
             and ipdata.FundHolderID<>'ccccc'
             and ipdata.dischartdate between ':startDate' and ':endDate'

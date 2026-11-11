@@ -22,7 +22,7 @@ $this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['dmstr\web\
     </div>
     <section class="xls-import-card">
         <h2>ไฟล์ที่อัปโหลด</h2>
-        <p class="xls-import-muted">ค้นหาได้จากช่องใต้หัวตาราง และเลื่อนตารางด้านข้างเพื่อดูข้อมูลเพิ่มเติม</p>
+        <p class="xls-import-muted">แสดงเฉพาะไฟล์ของรหัสสถานบริการที่เข้าสู่ระบบ ค้นหาได้จากช่องใต้หัวตาราง และเลื่อนตารางด้านข้างเพื่อดูข้อมูลเพิ่มเติม</p>
         <div class="table-responsive">
             <?= GridView::widget([
                 'dataProvider' => $dataProvider,
@@ -79,10 +79,14 @@ $this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['dmstr\web\
                         'value' => function ($model) {
                             $actions = [];
                             if ((int)$model->importstatus === 0) {
-                                $actions[] = $this->render('_import_button', [
-                                    'model' => $model,
-                                    'buttonClass' => 'btn btn-primary btn-sm',
-                                ]);
+                                $canImport = $model->typefileupload !== 'insurance'
+                                    || Yii::$app->user->can('manageInsurancePolicies');
+                                if ($canImport) {
+                                    $actions[] = $this->render('_import_button', [
+                                        'model' => $model,
+                                        'buttonClass' => 'btn btn-primary btn-sm',
+                                    ]);
+                                }
                             }
                             $actions[] = Html::a('เตรียมนำเข้าอีกครั้ง', ['reimport', 'id' => $model->xlsid], [
                                 'class' => 'btn btn-default btn-sm',

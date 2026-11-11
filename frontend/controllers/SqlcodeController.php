@@ -5,10 +5,9 @@ namespace frontend\controllers;
 use Yii;
 use frontend\models\SqlCode;
 use yii\web\NotFoundHttpException;
-use yii\web\ForbiddenHttpException;
 use yii\filters\VerbFilter;
 
-class SqlcodeController extends \yii\web\Controller
+class SqlcodeController extends BaseController
 {
     public function behaviors()
     {
@@ -34,11 +33,11 @@ class SqlcodeController extends \yii\web\Controller
     }
 
     /**
-     * ตรวจสอบว่าผู้ใช้มีสิทธิ์จัดการ (เฉพาะ hoscode 00064)
+     * ตรวจสอบว่าผู้ใช้เป็นผู้ดูแลระบบระดับจังหวัด
      */
     private function isAdmin(): bool
     {
-        return Yii::$app->session->get('hoscode') === '00064';
+        return Yii::$app->facilityAccess->isProvincialAdmin();
     }
 
     /**
@@ -69,9 +68,7 @@ class SqlcodeController extends \yii\web\Controller
     public function actionCreate()
     {
         $this->requireLogin();
-        if (!$this->isAdmin()) {
-            throw new ForbiddenHttpException('คุณไม่มีสิทธิ์ใช้งานส่วนนี้');
-        }
+        Yii::$app->facilityAccess->requirePermission('manageSqlCodes');
 
         $model = new SqlCode();
 
@@ -89,9 +86,7 @@ class SqlcodeController extends \yii\web\Controller
     public function actionUpdate(int $id)
     {
         $this->requireLogin();
-        if (!$this->isAdmin()) {
-            throw new ForbiddenHttpException('คุณไม่มีสิทธิ์ใช้งานส่วนนี้');
-        }
+        Yii::$app->facilityAccess->requirePermission('manageSqlCodes');
 
         $model = $this->findModel($id);
 
@@ -109,9 +104,7 @@ class SqlcodeController extends \yii\web\Controller
     public function actionDelete(int $id)
     {
         $this->requireLogin();
-        if (!$this->isAdmin()) {
-            throw new ForbiddenHttpException('คุณไม่มีสิทธิ์ใช้งานส่วนนี้');
-        }
+        Yii::$app->facilityAccess->requirePermission('manageSqlCodes');
 
         $this->findModel($id)->delete();
         Yii::$app->session->setFlash('success', 'ลบคำสั่ง SQL เรียบร้อยแล้ว');
@@ -130,4 +123,3 @@ class SqlcodeController extends \yii\web\Controller
         return $model;
     }
 }
-

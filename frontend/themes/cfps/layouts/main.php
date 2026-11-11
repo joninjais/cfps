@@ -26,9 +26,10 @@ if (in_array(Yii::$app->controller->action->id, ['login', 'change-password'])) {
         'depends' => ['dmstr\web\AdminLteAsset'],
         'position' => \yii\web\View::POS_END,
     ]);
-    if (Yii::$app->controller->id === 'site' && Yii::$app->controller->action->id === 'index') {
-        $dashboardCssPath = Yii::getAlias('@webroot/css/site-dashboard.css');
-        $this->registerCssFile('@web/css/site-dashboard.css?v=' . filemtime($dashboardCssPath), [
+    $showTopMenu = !empty(Yii::$app->session['user']);
+    if ($showTopMenu) {
+        $topMenuCssPath = Yii::getAlias('@webroot/css/cfps-topmenu.css');
+        $this->registerCssFile('@web/css/cfps-topmenu.css?v=' . filemtime($topMenuCssPath), [
             'depends' => ['dmstr\web\AdminLteAsset'],
             'position' => \yii\web\View::POS_END,
         ]);
@@ -46,11 +47,16 @@ if (in_array(Yii::$app->controller->action->id, ['login', 'change-password'])) {
         <title><?= Html::encode($this->title) ?></title>
         <?php $this->head() ?>
     </head>
-    <body class="hold-transition skin-green layout-top-nav">
+    <body class="hold-transition skin-green layout-top-nav<?= $showTopMenu ? ' cfps-has-topmenu' : '' ?>">
     <?php $this->beginBody() ?>
     <div class="wrapper">
 
-        <?= $this->render('header.php', ['directoryAsset' => $directoryAsset]) ?>
+        <div class="cfps-sticky-top">
+            <?= $this->render('header.php', ['directoryAsset' => $directoryAsset]) ?>
+            <?php if ($showTopMenu): ?>
+                <?= $this->render('top-menu.php') ?>
+            <?php endif; ?>
+        </div>
 
         <?= $this->render('content.php', ['content' => $content, 'directoryAsset' => $directoryAsset]) ?>
 

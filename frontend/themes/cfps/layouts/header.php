@@ -80,7 +80,7 @@ $webPath    = Yii::$app->request->baseUrl;
                         </li>
                         <?php endif; ?>
 
-                        <?php if ($session['hoscode'] === '00064'): ?>
+                        <?php if (Yii::$app->user->can('manageUsers')): ?>
                             <li>
                                 <?= Html::a('<i class="fa fa-users"></i> จัดการผู้ใช้', ['/user/index'], ['class' => '']) ?>
                             </li>
