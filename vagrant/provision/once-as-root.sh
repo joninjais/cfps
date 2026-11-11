@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 #== Import script args ==
 
-timezone=$(echo "$1")
+timezone=${1:?Timezone is required}
 
 #== Bash helpers ==
 
@@ -19,53 +20,63 @@ info "Provision-script user: `whoami`"
 export DEBIAN_FRONTEND=noninteractive
 
 info "Configure timezone"
-timedatectl set-timezone ${timezone} --no-ask-password
-
-info "Prepare root password for MySQL"
-debconf-set-selections <<< "mysql-community-server mysql-community-server/root-pass password \"''\""
-debconf-set-selections <<< "mysql-community-server mysql-community-server/re-root-pass password \"''\""
-echo "Done!"
+timedatectl set-timezone "$timezone" --no-ask-password
 
 info "Update OS software"
 apt-get update
 apt-get upgrade -y
 
-info "Install additional software"
-apt-get install -y php7.0-curl php7.0-cli php7.0-intl php7.0-mysqlnd php7.0-gd php7.0-fpm php7.0-mbstring php7.0-xml unzip nginx mysql-server-5.7 php.xdebug
+info "Add the official NGINX stable repository"
+apt-get install -y ca-certificates curl gnupg lsb-release ubuntu-keyring
+install -d -m 0755 /usr/share/keyrings
+curl -fsSL https://nginx.org/keys/nginx_signing.key -o /tmp/nginx_signing.key
+nginx_key_fingerprint=$(gpg --show-keys --with-colons /tmp/nginx_signing.key | awk -F: '$1 == "fpr" { print $10; exit }')
+if [ "$nginx_key_fingerprint" != "573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62" ]; then
+  echo "Unexpected NGINX signing key fingerprint: $nginx_key_fingerprint" >&2
+  exit 1
+fi
+gpg --dearmor --output /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key
+rm -f /tmp/nginx_signing.key
+. /etc/os-release
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/ubuntu ${VERSION_CODENAME} nginx" \
+  > /etc/apt/sources.list.d/nginx.list
+cat > /etc/apt/preferences.d/99nginx <<'EOF'
+Package: *
+Pin: origin nginx.org
+Pin: release o=nginx
+Pin-Priority: 900
+EOF
 
-info "Configure MySQL"
-sed -i "s/.*bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
-mysql -uroot <<< "CREATE USER 'root'@'%' IDENTIFIED BY ''"
-mysql -uroot <<< "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%'"
-mysql -uroot <<< "DROP USER 'root'@'localhost'"
-mysql -uroot <<< "FLUSH PRIVILEGES"
-echo "Done!"
+info "Install additional software"
+apt-get update
+apt-get install -y php8.3-curl php8.3-cli php8.3-intl php8.3-mysql php8.3-gd php8.3-fpm php8.3-mbstring php8.3-xml php-xdebug unzip nginx mysql-server
 
 info "Configure PHP-FPM"
-sed -i 's/user = www-data/user = vagrant/g' /etc/php/7.0/fpm/pool.d/www.conf
-sed -i 's/group = www-data/group = vagrant/g' /etc/php/7.0/fpm/pool.d/www.conf
-sed -i 's/owner = www-data/owner = vagrant/g' /etc/php/7.0/fpm/pool.d/www.conf
-cat << EOF > /etc/php/7.0/mods-available/xdebug.ini
-zend_extension=xdebug.so
-xdebug.remote_enable=1
-xdebug.remote_connect_back=1
-xdebug.remote_port=9000
-xdebug.remote_autostart=1
+sed -i 's/^user = www-data/user = vagrant/' /etc/php/8.3/fpm/pool.d/www.conf
+sed -i 's/^group = www-data/group = vagrant/' /etc/php/8.3/fpm/pool.d/www.conf
+sed -i 's/^;*listen.owner = www-data/listen.owner = vagrant/' /etc/php/8.3/fpm/pool.d/www.conf
+sed -i 's/^;*listen.group = www-data/listen.group = vagrant/' /etc/php/8.3/fpm/pool.d/www.conf
+cat << EOF > /etc/php/8.3/mods-available/xdebug.ini
+xdebug.mode=debug
+xdebug.discover_client_host=1
+xdebug.client_port=9000
+xdebug.start_with_request=yes
 EOF
+phpenmod xdebug
 echo "Done!"
 
 info "Configure NGINX"
-sed -i 's/user www-data/user vagrant/g' /etc/nginx/nginx.conf
+sed -i 's/^user .*/user vagrant;/' /etc/nginx/nginx.conf
 echo "Done!"
 
 info "Enabling site configuration"
-ln -s /app/vagrant/nginx/app.conf /etc/nginx/sites-enabled/app.conf
+ln -sfn /app/vagrant/nginx/app.conf /etc/nginx/conf.d/app.conf
 echo "Done!"
 
 info "Initailize databases for MySQL"
-mysql -uroot <<< "CREATE DATABASE yii2advanced"
-mysql -uroot <<< "CREATE DATABASE yii2advanced_test"
+mysql -uroot <<< "CREATE DATABASE IF NOT EXISTS yii2advanced"
+mysql -uroot <<< "CREATE DATABASE IF NOT EXISTS yii2advanced_test"
 echo "Done!"
 
 info "Install composer"
-curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+curl -fsSL https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer

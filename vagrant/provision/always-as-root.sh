@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 #== Bash helpers ==
 
@@ -13,6 +14,6 @@ function info {
 info "Provision-script user: `whoami`"
 
 info "Restart web-stack"
-service php7.0-fpm restart
-service nginx restart
-service mysql restart
+systemctl restart php8.3-fpm
+systemctl restart nginx
+systemctl restart mysql

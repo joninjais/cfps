@@ -33,7 +33,20 @@ class ExcelImportHeadersTest extends TestCase
         $sheet->fromArray($headers, null, 'A1');
         self::assertNull(ExcelImportHeaders::validate($sheet, $expected));
 
-        $sheet->setCellValue('A1', 'HOSPCODE');
+        $sheet->fromArray(array_map('strtoupper', $headers), null, 'A1');
+        self::assertNull(ExcelImportHeaders::validate($sheet, $expected));
+        $mixedCaseHeaders = array_map(
+            static fn(string $header, int $index): string => $index % 2 === 0
+                ? strtoupper($header)
+                : $header,
+            $headers,
+            array_keys($headers)
+        );
+        $sheet->fromArray($mixedCaseHeaders, null, 'A1');
+        self::assertNull(ExcelImportHeaders::validate($sheet, $expected));
+
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->setCellValue('A1', 'wrong');
         self::assertStringContainsString('A ต้องเป็น hospcode', ExcelImportHeaders::validate($sheet, $expected));
         $sheet->setCellValue('A1', 'hospcode');
 

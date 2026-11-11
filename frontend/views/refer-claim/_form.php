@@ -15,6 +15,7 @@ use frontend\models\ReferClaim;
 
     <?php $form = ActiveForm::begin(); ?>
 
+    <h3>ส่วนหัวเอกสาร</h3>
     <div class="row">
         <div class="col-md-6">
             <?= $form->field($model, 'hospcode')->widget(Select2::class, [
@@ -51,6 +52,7 @@ use frontend\models\ReferClaim;
         </div>
     </div>
 
+    <h3>ข้อมูลผู้ป่วยและการส่งต่อ</h3>
     <div class="row">
         <div class="col-md-3">
             <?= $form->field($model, 'dateserv')->widget(DatePicker::class, [
@@ -69,9 +71,10 @@ use frontend\models\ReferClaim;
         </div>
         <div class="col-md-3"><?= $form->field($model, 'refer_number')->textInput(['maxlength' => true]) ?></div>
         <div class="col-md-3"><?= $form->field($model, 'hn')->textInput(['maxlength' => true]) ?></div>
-        <div class="col-md-3"><?= $form->field($model, 'vn_an')->textInput(['maxlength' => true]) ?></div>
+        <div class="col-md-3"><?= $form->field($model, 'seq_an')->textInput(['maxlength' => true]) ?></div>
     </div>
 
+    <h3>ข้อมูลผู้ป่วย</h3>
     <div class="row">
         <div class="col-md-4"><?= $form->field($model, 'cid')->textInput(['maxlength' => true]) ?></div>
         <div class="col-md-4"><?= $form->field($model, 'name')->textInput(['maxlength' => true]) ?></div>
@@ -79,11 +82,35 @@ use frontend\models\ReferClaim;
         <div class="col-md-2"><?= $form->field($model, 'p_age')->input('number', ['min' => 0, 'max' => 150]) ?></div>
     </div>
 
+    <h3>ข้อมูลการรักษา</h3>
+    <div class="row">
+        <div class="col-md-3">
+            <?= $form->field($model, 'p_visit_type')->dropDownList(ReferClaim::visitTypeList(), ['prompt' => '-- เลือกประเภท --']) ?>
+        </div>
+        <div class="col-md-3">
+            <?= $form->field($model, 'discharge_date_ipd')->widget(DatePicker::class, [
+                'language'      => 'th',
+                'options'       => [
+                    'value'        => ReferClaim::isoToThai($model->discharge_date_ipd),
+                    'autocomplete' => 'off',
+                    'placeholder'  => 'วว/ดด/ปปปป',
+                ],
+                'clientOptions' => [
+                    'autoclose'      => true,
+                    'format'         => 'dd/mm/yyyy',
+                    'todayHighlight' => true,
+                ],
+            ]) ?>
+        </div>
+        <div class="col-md-3"><?= $form->field($model, 'adj_rw')->textInput(['maxlength' => true]) ?></div>
+    </div>
+
     <div class="row">
         <div class="col-md-6"><?= $form->field($model, 'icd10')->textInput(['maxlength' => true]) ?></div>
         <div class="col-md-6"><?= $form->field($model, 'icd9')->textInput(['maxlength' => true]) ?></div>
     </div>
 
+    <h3>รายการค่ารักษาพยาบาล</h3>
     <div class="row">
         <?php foreach (['cost_lab', 'cost_xray', 'cost_radiother', 'cost_drug', 'cost_other'] as $attr): ?>
             <div class="col-md-2">
@@ -102,6 +129,7 @@ use frontend\models\ReferClaim;
     <div class="row">
         <div class="col-md-3"><?= $form->field($model, 'central_pay')->input('number', ['step' => '0.01', 'min' => 0]) ?></div>
         <div class="col-md-3"><?= $form->field($model, 'claim_amount')->input('number', ['step' => '0.01', 'min' => 0]) ?></div>
+        <div class="col-md-3"><?= $form->field($model, 'pay_total')->input('number', ['step' => '0.01', 'min' => 0]) ?></div>
     </div>
 
     <div class="row">

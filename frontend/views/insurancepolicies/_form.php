@@ -34,7 +34,17 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'ethnicity')->textInput(['maxlength' => true]) ?>
 
+    <?= $form->field($model, 'birth_date')->textInput() ?>
+    <?= $form->field($model, 'age_at_purchase')->textInput(['maxlength' => true]) ?>
     <?= $form->field($model, 'hn_code')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'house_no')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'village_no')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'alley')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'road')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'address_province')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'subdistrict')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'district')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'postal_code')->textInput(['maxlength' => true]) ?>
 
     <?= $form->field($model, 'purchase_date')->textInput() ?>
 
@@ -44,7 +54,15 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'policy_status')->textInput(['maxlength' => true]) ?>
 
+    <?= $form->field($model, 'reference_no')->textInput(['maxlength' => true]) ?>
     <?= $form->field($model, 'card_price')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'allocation_service_unit')->textInput() ?>
+    <?= $form->field($model, 'allocation_provincial_pp')->textInput() ?>
+    <?= $form->field($model, 'allocation_provincial_admin')->textInput() ?>
+    <?= $form->field($model, 'allocation_provincial_total')->textInput() ?>
+    <?= $form->field($model, 'allocation_central_hc')->textInput() ?>
+    <?= $form->field($model, 'allocation_central_admin')->textInput() ?>
+    <?= $form->field($model, 'allocation_central_total')->textInput() ?>
 
     <?= $form->field($model, 'coverage_period')->textarea(['rows' => 6]) ?>
 
@@ -63,6 +81,10 @@ use yii\widgets\ActiveForm;
     <?= $form->field($model, 'mother_alien_ref_id')->textInput(['maxlength' => true]) ?>
 
     <?= $form->field($model, 'mother_full_name')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'occupation')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'employer_name')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'employer_address')->textarea(['rows' => 3]) ?>
+    <?= $form->field($model, 'employer_phone')->textInput(['maxlength' => true]) ?>
 
     <?= $form->field($model, 'created_at')->textInput() ?>
 

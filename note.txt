@@ -1,12 +1,114 @@
 copy controllers กับ views จาก ip .1.83 มาทับ
 
-สร้าง store PROCEDURE
 
+สร้าง fuction ใช้แยกประเภทข้อมูล op กับ pp
 --------------------------------------------
+fn_get_op_pp_type
 
-DELIMITER //
+CREATE DEFINER=`superadmin`@`%` FUNCTION `fn_get_op_pp_type`(p_icd10 VARCHAR(50)) RETURNS varchar(2) CHARSET utf8mb4 COLLATE utf8mb4_general_ci
+    DETERMINISTIC
+RETURN CASE
+    WHEN (
+        p_icd10 LIKE '%Z34%' OR p_icd10 LIKE '%Z13%' OR p_icd10 LIKE '%Z35%'
+        OR p_icd10 LIKE '%Z30%' OR p_icd10 LIKE '%Z31%' OR p_icd10 LIKE '%Z32%'
+        OR p_icd10 LIKE '%Z33%' OR p_icd10 LIKE '%Z39%' OR p_icd10 LIKE '%Z364%'
+        OR p_icd10 LIKE '%Z37%' OR p_icd10 LIKE '%Z21%' OR p_icd10 LIKE '%Z232%'
+        OR p_icd10 LIKE '%Z240%' OR p_icd10 LIKE '%Z244%' OR p_icd10 LIKE '%Z245%'
+        OR p_icd10 LIKE '%Z271%' OR p_icd10 LIKE '%Z246%' OR p_icd10 LIKE '%Z251%'
+        OR p_icd10 LIKE '%Z274%' OR p_icd10 LIKE '%Z273%' OR p_icd10 LIKE '%Z11%'
+        OR p_icd10 LIKE '%Z10%' OR p_icd10 LIKE '%Z298%' OR p_icd10 LIKE '%Z001%'
+        OR p_icd10 LIKE '%Z115%' OR p_icd10 LIKE '%U119%'
+    ) THEN 'pp'
+    ELSE 'op'
+END
+--------------------------------------------
+สร้าง store PROCEDURE
+--------------------------------------------
+import_insurance_batch
 
-CREATE PROCEDURE InsertIntoFWFDatabase()
+CREATE DEFINER=`superadmin`@`%` PROCEDURE `import_insurance_batch`(IN p_batch_size INT)
+BEGIN
+  DECLARE done INT DEFAULT 0;
+  DECLARE v_last_id INT DEFAULT 0;
+  DECLARE v_rows INT DEFAULT 0;
+
+  -- ถ้าต้องการเริ่มจาก id ใด ให้กำหนด v_last_id ก่อนเรียก procedure
+  -- Loop หลัก
+  read_loop: LOOP
+    -- ทำการ INSERT ทีละก้อน โดยเลือกจาก id > v_last_id เพื่อหลีกเลี่ยง OFFSET (ประสิทธิภาพดีกว่า)
+    INSERT INTO fwfdatabase (
+      PeriodID,
+      PeriodStartDate,
+      PeriodEndDate,
+      CID,
+      FundHolderID,
+      fname,
+      lname,
+      timeregis,
+      regisdate,
+      exsfile,
+      card_price         -- เพิ่มตรงนี้
+    )
+    SELECT
+      src.f_code AS PeriodID,
+      src.effective_date AS PeriodStartDate,
+      src.expiry_date AS PeriodEndDate,
+      CONCAT(
+        IFNULL(src.f_code, ''),
+        ' , ',
+        IFNULL(src.passport_no, ''),
+        ' , ',
+        IFNULL(src.citizen_id, ''),
+        ' , ',
+        IFNULL(src.alien_ref_id, '')
+      ) AS CID,
+      LEFT(src.agency_code, 5) AS FundHolderID,
+      src.full_name AS fname,
+      src.nationality AS lname,
+      COALESCE(src.coverage_period, '') AS timeregis,
+      COALESCE(DATE_FORMAT(src.purchase_date, '%Y-%m-%d'), '') AS regisdate,
+      'FDH' AS exsfile,
+      src.card_price     -- เพิ่มตรงนี้
+    FROM insurance_policies src
+    LEFT JOIN fwfdatabase tgt
+      ON tgt.PeriodID = src.f_code COLLATE utf8mb4_general_ci
+      AND tgt.FundHolderID = LEFT(src.agency_code,5) COLLATE utf8mb4_general_ci
+    WHERE tgt.PeriodID IS NULL
+      AND src.effective_date IS NOT NULL
+      AND src.expiry_date IS NOT NULL
+      AND src.id > v_last_id
+    ORDER BY src.id
+    LIMIT p_batch_size;
+
+    -- จำนวนแถวที่ถูก INSERT ในรอบนี้
+    SET v_rows = ROW_COUNT();
+
+    -- ถ้าไม่มีแถวถูก insert ให้จบ loop
+    IF v_rows = 0 THEN
+      LEAVE read_loop;
+    END IF;
+
+    -- อัพเดต v_last_id เป็น id สูงสุดที่เพิ่งประมวลผล (เพื่อให้รอบถัดไปเริ่มหลังจากนี้)
+    -- หา id สูงสุดจากแถวที่เพิ่งถูกเลือก (ใช้ MAX(id) จาก source ที่ id > previous v_last_id)
+    SELECT MAX(id) INTO v_last_id
+    FROM insurance_policies
+    WHERE id > v_last_id
+    ORDER BY id
+    LIMIT v_rows;
+
+    -- (ไม่บังคับ) แสดงสถานะแบบเรียลไทม์เมื่อรันใน client
+    SELECT CONCAT('Inserted rows this batch: ', v_rows, ' ; last_id now: ', v_last_id) AS batch_status;
+
+  END LOOP read_loop;
+
+  -- สรุปผลเมื่อจบ
+  SELECT 'Import finished' AS status, v_last_id AS last_processed_id;
+END
+--------------------------------------------
+--------------------------------------------
+InsertIntoFWFDatabase
+
+CREATE DEFINER=`superadmin`@`%` PROCEDURE `InsertIntoFWFDatabase`()
 BEGIN
     INSERT INTO fwfdatabase 
         (PeriodID, PeriodStartDate, PeriodEndDate, CID, FundHolderID, fname, lname, timeregis, regisdate, exsfile)
@@ -31,12 +133,9 @@ BEGIN
           AND fwf.PeriodEndDate = pt.PeriodEndDate
           AND fwf.FundHolderID = rt.FundHolderID
     );
-END //
-
-DELIMITER ;
-
-
+END
 --------------------------------------------
+
 
 มีประเด็น Fcode ซ้ำ
 F048827653015
@@ -52,10 +151,11 @@ F048827653015
 ข้อมูลที่มีค่าใช้จ่ายเกิน 10,000 รายหน่วยบริการ สสจ.ดูทั้งหมด
 เพิ่มระบบนำเข้า user ด้วยไฟล์ excel
 
-เพิ่ม colums ทั้ง op ip
-Hcode,Vstdate,Pmname,sex,p_age(y),nation,สังกัด/กองทุน,Cid,Hn,Vn,Icd10,icd9,Inc01,Inc02,Inc03,Inc04,Inc05,Inc06,Inc07,Inc08,Inc09,Inc10,Inc11,Inc12,Inc13,Inc14,Inc15,Inc16,Alltotal,refer_out(เลข refer),refer_hosp
+ปรับโครงสร้างตาราง insurance_policies ให้ตรงกับไฟล์ excel ที่นำเข้า ปรับ code โดยรักษากระบวนการทำงานเดิม
 
+ลบส่วนที่ไม่ได้ใช้แล้ว ตาราง fwfhealth
 
+สสอ ดู รพ.สต ในเขต
 
 แนวทางการพัฒนาต่อ
 เปลี่ยนสถาปัตยกรรมเป็น Hybrid (API + Modern Frontend)
@@ -63,3 +163,67 @@ Hcode,Vstdate,Pmname,sex,p_age(y),nation,สังกัด/กองทุน,C
 เก็บระบบ Yii2 เดิมไว้ทำหน้าที่เป็น RESTful API (เพราะ Yii2 ทำ API ได้ดีและเสถียรมาก)
 เขียนฝั่งหน้าบ้าน (Frontend) ใหม่ด้วย Framework ยอดนิยมในยุคนี้ เช่น Next.js (React) หรือ Nuxt (Vue)
 วิธีแก้เรื่อง Kartik Grid/Export: ในฝั่ง Frontend สมัยใหม่มี Library จัดการตารางและ Export ที่ทรงพลังกว่า Kartik มาก เช่น TanStack Table (React Table) หรือ DataTables ซึ่งสามารถดึงข้อมูล JSON จาก Yii2 API มาแสดงผล ทำ Filter, Sort และ Export ฝั่ง Client ได้อย่างรวดเร็วโดยไม่เปลืองแรงเซิร์ฟเวอร์
+
+
+
+ค่ารักษาผู้ป่วยนอกส่งต่อต่างจังหวัด
+อนุม้ติจ่าย
+ปฏิเสธ มีเหตุผลที่ไม่จ่าย
+
+ตัดจ่ายกับเงินกองทุน
+
+
+การบริหารจัดการกองทุน
+
+
+CREATE TABLE `refer_claim` (
+  `rcid`             int(11) NOT NULL AUTO_INCREMENT,
+  -- ===== ส่วนหัวเอกสาร =====
+  `hospcode`         varchar(20)   NOT NULL        COMMENT 'รหัส รพ.ต้นทาง (ผู้ส่งต่อ/ผู้จ่าย) เชื่อม opdata.hospcode',
+  `serv_hospcode`    varchar(20)   NOT NULL        COMMENT 'รหัสหน่วยบริการที่รักษา/เรียกเก็บ เชื่อม opdata.refertohospcode',
+  `book_number`    varchar(50)   NOT NULL        COMMENT 'เลขที่หนังสือ',
+  `book_date`    date   NOT NULL        COMMENT 'วันที่หนังสือ',
+  -- ===== รายการผู้ป่วย =====
+  `dateserv`         date         NOT NULL        COMMENT 'วันที่รับบริการ (ค.ศ.)',
+  `hn`               varchar(50)  NOT NULL        COMMENT 'HN ของหน่วยบริการที่รักษา',
+  `seq_an`            varchar(50)   DEFAULT NULL    COMMENT 'เลขที่รับบริการ VN/AN',
+  `cid`              varchar(255) DEFAULT NULL    COMMENT 'เลขที่บัตร',
+  `name`             varchar(255) NOT NULL        COMMENT 'ชื่อ-สกุล',
+  `refer_number`     varchar(50)  NOT NULL        COMMENT 'เลขที่ refer',
+  `sex`              char(1)      DEFAULT NULL    COMMENT '1=ชาย, 2=หญิง',
+  `p_age`            smallint(6) UNSIGNED DEFAULT NULL COMMENT 'อายุเป็นปี',
+  `icd10`            varchar(255) DEFAULT NULL    COMMENT 'การวินิจฉัยโรค ICD-10',
+  `icd9`             varchar(255) DEFAULT NULL    COMMENT 'การผ่าตัด/หัตถการ ICD-9-CM',
+  -- ===== ค่าบริการทางการแพทย์ (บาท) =====
+  `cost_lab`         decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'ชันสูตร',
+  `cost_xray`        decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'รังสี',
+  `cost_radiother`   decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'รังสีรักษา',
+  `cost_drug`        decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'ยาและเวชภัณฑ์',
+  `cost_other`       decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'บำบัดรักษาอื่นๆ',
+  `cost_total`       decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'รวมทั้งสิ้น',
+  `central_pay`      decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'เบิกส่วนกลาง',
+  `claim_amount`     decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'จำนวนเรียกเก็บ',
+  -- ===== ผู้รับรอง =====
+  `username`   varchar(255) DEFAULT NULL    COMMENT 'ชื่อผู้บันทึก',
+  `username_edit`   varchar(255) DEFAULT NULL    COMMENT 'ชื่อผู้แก้ไข',
+  `record_date`        date         DEFAULT NULL    COMMENT 'วันที่บันทึก',
+  `record_time`        time         DEFAULT NULL    COMMENT 'เวลาบันทึก',
+  `modified_date`        date         DEFAULT NULL    COMMENT 'วันที่แก้ไข',
+  `modified_time`        time         DEFAULT NULL    COMMENT 'เวลาแก้ไข',
+  `approved_by`   varchar(255) DEFAULT NULL    COMMENT 'ชื่อผู้อนุมัติ',
+  `approved_status`   varchar(50)  DEFAULT NULL    COMMENT 'สถานะการอนุมัติ = จ่าย/ปฏิเสธ',
+  `approved_date`        date         DEFAULT NULL    COMMENT 'วันที่อนุมัติ จ่าย/ปฏิเสธ',
+  `approved_time`        time         DEFAULT NULL    COMMENT 'เวลาอนุมัติ จ่าย/ปฏิเสธ',
+  `note`   varchar(255)  DEFAULT NULL    COMMENT 'หมายเหตุ',
+  `p_visit_type`   varchar(255)  DEFAULT NULL    COMMENT 'ประเภทการเข้ารับบริการ IPD/OPD',
+  `discharge_date_ipd`   date         DEFAULT NULL    COMMENT 'วันที่จำหน่ายผู้ป่วยใน',
+  `adj_rw`   varchar(255)  DEFAULT NULL    COMMENT 'adj.rw มีเฉพาะ ipd',
+  `pay_total`     decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'จำนวนจ่าย',
+
+  PRIMARY KEY (`rcid`),
+  UNIQUE KEY `uk_claim` (`hospcode`,`refer_number`,`serv_hospcode`,`hn`,`seq_an`,`dateserv`),
+  KEY `idx_refer` (`refer_number`,`hospcode`),
+  KEY `idx_refer_to` (`refer_number`,`serv_hospcode`),
+  KEY `idx_dateserv` (`dateserv`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  COMMENT='ค่ารักษาผู้ป่วยนอกส่งต่อ ประกันสุขภาพแรงงานต่างด้าว (แบบ นค.1)';

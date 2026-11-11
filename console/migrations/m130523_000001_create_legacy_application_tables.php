@@ -449,8 +449,9 @@ SQL,
     {
         if ($this->db->getTableSchema(self::STATE_TABLE, true) === null) {
             $this->createTable(self::STATE_TABLE, [
-                'table_name' => $this->string(64)->notNull()->primaryKey(),
+                'table_name' => $this->string(64)->notNull(),
             ]);
+            $this->addPrimaryKey('pk_m130523_legacy_table_state', self::STATE_TABLE, 'table_name');
         }
 
         foreach (self::TABLES as $table => $definition) {

@@ -22,7 +22,7 @@ class ReferClaimController extends BaseController
         return [
             'verbs' => [
                 'class'   => VerbFilter::class,
-                'actions' => ['delete' => ['POST'], 'approve' => ['POST']],
+                'actions' => ['delete' => ['POST'], 'approve' => ['POST'], 'note' => ['POST']],
             ],
         ];
     }
@@ -110,6 +110,27 @@ class ReferClaimController extends BaseController
         }
 
         // เปลี่ยนจากหน้า index → กลับ index เดิม (ใช้ URL ที่จำไว้ในเซสชัน ไม่รับ URL จากผู้ใช้)
+        if (Yii::$app->request->post('from') === 'index') {
+            return $this->redirect(Url::previous('refer-claim-index') ?: ['index']);
+        }
+
+        return $this->redirect(['view', 'id' => $model->rcid]);
+    }
+
+    public function actionNote($id)
+    {
+        $model = $this->findModel($id);
+        $model->note = trim((string)Yii::$app->request->post('note', '')) ?: null;
+
+        if (!$model->validate(['note'])) {
+            Yii::$app->session->setFlash('error', implode(' ', $model->getFirstErrors()));
+        } elseif ($model->save(false)) {
+            Yii::$app->session->setFlash('success', 'บันทึกหมายเหตุแล้ว');
+        } else {
+            Yii::error('ไม่สามารถบันทึกหมายเหตุของ refer_claim rcid=' . $model->rcid, __METHOD__);
+            Yii::$app->session->setFlash('error', 'บันทึกหมายเหตุไม่สำเร็จ กรุณาลองอีกครั้ง');
+        }
+
         if (Yii::$app->request->post('from') === 'index') {
             return $this->redirect(Url::previous('refer-claim-index') ?: ['index']);
         }

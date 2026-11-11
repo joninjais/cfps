@@ -14,6 +14,7 @@ class ReferClaimSearch extends ReferClaim
     {
         return [
             [['hospcode', 'serv_hospcode', 'book_number', 'approved_status', 'dateserv', 'hn', 'cid', 'name', 'refer_number', 'username'], 'safe'],
+            [['pay_total'], 'number', 'min' => 0],
         ];
     }
 
@@ -47,6 +48,7 @@ class ReferClaimSearch extends ReferClaim
             ->andFilterWhere(['like', 'cid', $this->cid])
             ->andFilterWhere(['like', 'name', $this->name])
             ->andFilterWhere(['like', 'refer_number', $this->refer_number])
+            ->andFilterWhere(['pay_total' => $this->pay_total])
             ->andFilterWhere(['like', 'username', $this->username]);
 
         return $dataProvider;

@@ -210,7 +210,7 @@ class InsurancepoliciesController extends BaseController
         $duplicates = 0;
         $skipped = 0;
 
-        // ตรวจสอบ format ไฟล์จาก header row: ถ้า col 11 = "วัน/เดือน/ปี เกิด" คือ format ใหม่ (44 คอลัมน์ A-AR)
+        // รูปแบบใหม่มีข้อมูลวันเกิด ที่อยู่ และการจัดสรรเงินเพิ่มจากรูปแบบเดิม
         $isNewFormat = false;
         if ($headerRow > 0) {
             $headerCols = $sheet->rangeToArray('A' . $headerRow . ':AR' . $headerRow, null, true, true, false);
@@ -221,7 +221,7 @@ class InsurancepoliciesController extends BaseController
         $transaction = Yii::$app->db->beginTransaction();
         try {
             for ($row = $startRow; $row <= $highestRow; $row++) {
-                $cols = $sheet->rangeToArray('A' . $row . ':AR' . $row, null, true, true, false);
+                $cols = $sheet->rangeToArray('A' . $row . ':AV' . $row, null, true, true, false);
                 $rowData = $cols[0] ?? [];
 
                 $agencyCode = $this->normalizeText($rowData[0] ?? null);
@@ -237,11 +237,11 @@ class InsurancepoliciesController extends BaseController
                 $ethnicity = $this->normalizeText($rowData[10] ?? null);
 
                 if ($isNewFormat) {
-                    // Format ใหม่ (44 คอลัมน์ A-AR): มีคอลัมน์วันเกิด, อายุ, ที่อยู่, เลขอ้างอิง แทรกเข้ามา
+                    // รูปแบบใหม่: A-AR หรือ A-AV เมื่อมีข้อมูลนายจ้าง
                     $hnCode        = $this->normalizeText($rowData[13] ?? null);
-                    $purchaseDate  = $this->parseExcelDate($rowData[22] ?? null);
-                    $effectiveDate = $this->parseExcelDate($rowData[23] ?? null);
-                    $expiryDate    = $this->parseExcelDate($rowData[24] ?? null);
+                    $purchaseDate  = $this->parsePolicyDate($rowData[22] ?? null);
+                    $effectiveDate = $this->parsePolicyDate($rowData[23] ?? null);
+                    $expiryDate    = $this->parsePolicyDate($rowData[24] ?? null);
                     $policyStatus  = $this->normalizeText($rowData[25] ?? null);
                     $cardPrice     = $this->parseDecimal($rowData[27] ?? null);
                     $coveragePeriod    = $this->normalizeText($rowData[35] ?? null);
@@ -256,9 +256,9 @@ class InsurancepoliciesController extends BaseController
                 } else {
                     // Format เดิม (26 คอลัมน์ A-Z)
                     $hnCode        = $this->normalizeText($rowData[11] ?? null);
-                    $purchaseDate  = $this->parseExcelDate($rowData[12] ?? null);
-                    $effectiveDate = $this->parseExcelDate($rowData[13] ?? null);
-                    $expiryDate    = $this->parseExcelDate($rowData[14] ?? null);
+                    $purchaseDate  = $this->parsePolicyDate($rowData[12] ?? null);
+                    $effectiveDate = $this->parsePolicyDate($rowData[13] ?? null);
+                    $expiryDate    = $this->parsePolicyDate($rowData[14] ?? null);
                     $policyStatus  = $this->normalizeText($rowData[15] ?? null);
                     $cardPrice     = $this->parseDecimal($rowData[16] ?? null);
                     $coveragePeriod    = $this->normalizeText($rowData[17] ?? null);
@@ -341,6 +341,47 @@ class InsurancepoliciesController extends BaseController
                     'mother_alien_ref_id' => $motherAlienRefId,
                     'mother_full_name' => $motherFullName,
                 ];
+
+                if ($isNewFormat) {
+                    $birthDate = $this->parsePolicyDate($rowData[11] ?? null);
+                    if ($this->normalizeText($rowData[11] ?? null) !== null && $birthDate === null) {
+                        throw new \RuntimeException('วันเกิดไม่ถูกต้องในแถว ' . $row);
+                    }
+                    $insertData += [
+                        'birth_date' => $birthDate,
+                        'age_at_purchase' => $this->normalizeText($rowData[12] ?? null),
+                        'house_no' => $this->normalizeText($rowData[14] ?? null),
+                        'village_no' => $this->normalizeText($rowData[15] ?? null),
+                        'alley' => $this->normalizeText($rowData[16] ?? null),
+                        'road' => $this->normalizeText($rowData[17] ?? null),
+                        'address_province' => $this->normalizeText($rowData[18] ?? null),
+                        'subdistrict' => $this->normalizeText($rowData[19] ?? null),
+                        'district' => $this->normalizeText($rowData[20] ?? null),
+                        'postal_code' => $this->normalizeText($rowData[21] ?? null),
+                        'reference_no' => $this->normalizeText($rowData[26] ?? null),
+                        'occupation' => $this->normalizeText($rowData[44] ?? null),
+                        'employer_name' => $this->normalizeText($rowData[45] ?? null),
+                        'employer_address' => $this->normalizeText($rowData[46] ?? null),
+                        'employer_phone' => $this->normalizeText($rowData[47] ?? null),
+                    ];
+                    $allocationColumns = [
+                        28 => 'allocation_service_unit',
+                        29 => 'allocation_provincial_pp',
+                        30 => 'allocation_provincial_admin',
+                        31 => 'allocation_provincial_total',
+                        32 => 'allocation_central_hc',
+                        33 => 'allocation_central_admin',
+                        34 => 'allocation_central_total',
+                    ];
+                    foreach ($allocationColumns as $index => $column) {
+                        $value = $rowData[$index] ?? null;
+                        $amount = $this->parseDecimal($value);
+                        if ($this->normalizeText($value) !== null && $amount === null) {
+                            throw new \RuntimeException('ยอดจัดสรรไม่ถูกต้องในแถว ' . $row . ' คอลัมน์ ' . \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1));
+                        }
+                        $insertData[$column] = $amount;
+                    }
+                }
 
                 Yii::$app->db->createCommand()->insert('insurance_policies', $insertData)->execute();
 
@@ -450,7 +491,7 @@ class InsurancepoliciesController extends BaseController
         return is_numeric($text) ? (float)$text : null;
     }
 
-    private function parseExcelDate($value)
+    private function parsePolicyDate($value)
     {
         if ($value === null || $value === '') {
             return null;

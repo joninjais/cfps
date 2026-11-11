@@ -19,22 +19,27 @@ class ReferClaim extends ActiveRecord
     public function rules()
     {
         return [
-            [['hospcode', 'serv_hospcode', 'book_number', 'book_date', 'dateserv', 'hn', 'name', 'refer_number'], 'required'],
+            [['hospcode', 'serv_hospcode', 'book_number', 'book_date', 'dateserv', 'hn', 'name'], 'required'],
             [['hospcode', 'serv_hospcode'], 'string', 'max' => 20],
-            [['hn', 'vn_an', 'refer_number', 'book_number'], 'string', 'max' => 50],
-            [['cid', 'name', 'icd10', 'icd9', 'note'], 'string', 'max' => 255],
+            [['hn', 'seq_an', 'refer_number', 'book_number'], 'string', 'max' => 50],
+            [['cid', 'name', 'icd10', 'icd9', 'note', 'p_visit_type', 'adj_rw'], 'string', 'max' => 255],
             // ช่องวันที่จาก datepicker ไทยส่งมาเป็น dd/mm/พ.ศ. → แปลงเป็น Y-m-d (ค.ศ.) ก่อนตรวจสอบ
-            [['dateserv', 'book_date'], 'filter', 'filter' => [self::class, 'thaiToIso']],
-            [['dateserv', 'book_date'], 'date', 'format' => 'php:Y-m-d'],
+            [['dateserv', 'book_date', 'discharge_date_ipd'], 'filter', 'filter' => [self::class, 'thaiToIso']],
+            [['dateserv', 'book_date', 'discharge_date_ipd'], 'date', 'format' => 'php:Y-m-d'],
             [['sex'], 'in', 'range' => ['1', '2']],
+            [['p_visit_type'], 'in', 'range' => array_keys(self::visitTypeList())],
             [['p_age'], 'integer', 'min' => 0, 'max' => 150],
-            [['cost_lab', 'cost_xray', 'cost_radiother', 'cost_drug', 'cost_other', 'central_pay', 'claim_amount'],
+            [['cost_lab', 'cost_xray', 'cost_radiother', 'cost_drug', 'cost_other', 'central_pay', 'claim_amount', 'pay_total'],
                 'number', 'min' => 0],
-            [['cost_lab', 'cost_xray', 'cost_radiother', 'cost_drug', 'cost_other', 'central_pay', 'claim_amount'],
+            [['cost_lab', 'cost_xray', 'cost_radiother', 'cost_drug', 'cost_other', 'central_pay', 'claim_amount', 'pay_total'],
                 'default', 'value' => 0],
-            [['hospcode', 'refer_number', 'serv_hospcode', 'hn', 'dateserv'], 'unique',
-                'targetAttribute' => ['hospcode', 'refer_number', 'serv_hospcode', 'hn', 'dateserv'],
-                'message' => 'มีข้อมูลนี้อยู่แล้ว (รพ.ต้นทาง + เลข refer + หน่วยบริการ + HN + วันที่รับบริการ ซ้ำ)'],
+            [['hospcode', 'refer_number', 'serv_hospcode', 'hn', 'seq_an', 'dateserv'], 'unique',
+                'targetAttribute' => ['hospcode', 'refer_number', 'serv_hospcode', 'hn', 'seq_an', 'dateserv'],
+                'message' => 'มีข้อมูลนี้อยู่แล้ว (รพ.ต้นทาง + เลข refer + หน่วยบริการ + HN + VN/AN + วันที่รับบริการ ซ้ำ)'],
+            [['serv_hospcode', 'seq_an'], 'unique',
+                'targetAttribute' => ['serv_hospcode', 'seq_an'],
+                'when' => static fn($model) => $model->seq_an !== null && $model->seq_an !== '',
+                'message' => 'VN/AN นี้มีอยู่แล้วในหน่วยบริการที่เลือก'],
         ];
     }
 
@@ -48,7 +53,7 @@ class ReferClaim extends ActiveRecord
             'book_date'      => 'วันที่หนังสือ',
             'dateserv'       => 'วันที่รับบริการ',
             'hn'             => 'HN',
-            'vn_an'          => 'VN/AN',
+            'seq_an'         => 'VN/AN',
             'cid'            => 'เลขที่บัตร',
             'name'           => 'ชื่อ-สกุล',
             'refer_number'   => 'เลขที่ refer',
@@ -64,6 +69,10 @@ class ReferClaim extends ActiveRecord
             'cost_total'     => 'รวมทั้งสิ้น',
             'central_pay'    => 'เบิกส่วนกลาง',
             'claim_amount'   => 'จำนวนเรียกเก็บ',
+            'p_visit_type'   => 'ประเภทการเข้ารับบริการ',
+            'discharge_date_ipd' => 'วันที่จำหน่ายผู้ป่วยใน',
+            'adj_rw'         => 'Adj. RW',
+            'pay_total'      => 'จำนวนจ่าย',
             'username'       => 'ผู้บันทึก',
             'username_edit'  => 'ผู้แก้ไข',
             'record_date'    => 'วันที่บันทึก',
@@ -152,7 +161,7 @@ class ReferClaim extends ActiveRecord
     {
         $ignore  = ['approved_by', 'approved_status', 'approved_date', 'approved_time', 'cost_total'];
         $numeric = ['cost_lab', 'cost_xray', 'cost_radiother', 'cost_drug', 'cost_other',
-                    'central_pay', 'claim_amount', 'p_age'];
+                    'central_pay', 'claim_amount', 'pay_total', 'p_age'];
 
         foreach ($this->getDirtyAttributes() as $name => $value) {
             if (in_array($name, $ignore, true)) {
@@ -171,6 +180,11 @@ class ReferClaim extends ActiveRecord
     public static function sexList()
     {
         return ['1' => 'ชาย', '2' => 'หญิง'];
+    }
+
+    public static function visitTypeList()
+    {
+        return ['OPD' => 'ผู้ป่วยนอก (OPD)', 'IPD' => 'ผู้ป่วยใน (IPD)'];
     }
 
     /**
@@ -208,5 +222,17 @@ class ReferClaim extends ActiveRecord
         }
 
         return true;
+    }
+
+    public function beforeValidate()
+    {
+        if ($this->seq_an !== null && trim((string)$this->seq_an) === '') {
+            $this->seq_an = null;
+        }
+        if ($this->refer_number !== null && trim((string)$this->refer_number) === '') {
+            $this->refer_number = null;
+        }
+
+        return parent::beforeValidate();
     }
 }

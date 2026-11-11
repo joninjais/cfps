@@ -29,14 +29,21 @@ $this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['dmstr\web\
                 <li>สำหรับ OP / PP และ IP หัวตารางในแถวแรกต้องตรงตามชื่อ ลำดับ และตัวพิมพ์ทุกคอลัมน์ โดยไม่มีหัวคอลัมน์เพิ่มเติม</li>
                 <li>หลังอัปโหลด ให้ตรวจสอบรายละเอียดแล้วกด “นำเข้าข้อมูล” อีกครั้ง</li>
             </ol>
-            <details>
-                <summary>หัวตาราง OP / PP</summary>
+            <p>
+                ดาวน์โหลดไฟล์ตัวอย่าง:
+                <?= Html::a('OP / PP', '@web/EX-op-pp.xlsx', ['download' => 'EX-op-pp.xlsx']) ?>
+                และ
+                <?= Html::a('IP', '@web/EX-ip.xlsx', ['download' => 'EX-ip.xlsx']) ?>
+            </p>
+            <div>
+                <strong>หัวตาราง OP / PP</strong>
                 <p class="xls-import-headers"><?= Html::encode(implode(' | ', ExcelImportHeaders::OP)) ?></p>
-            </details>
-            <details>
-                <summary>หัวตาราง IP</summary>
+            </div>
+            <div>
+                <strong>หัวตาราง IP</strong>
                 <p class="xls-import-headers"><?= Html::encode(implode(' | ', ExcelImportHeaders::IP)) ?></p>
-            </details>
+            </div>
+            <p class="xls-import-muted">หมายเหตุ: nation = ['048', '265', '056', '266', '046', '057', '264','208']</p>
             <p class="xls-import-muted">ระบบคำนวณ alltotal ของ OP / PP และ costadjrw ของ IP เอง แต่ยังต้องมีคอลัมน์ดังกล่าวในไฟล์</p>
             <p class="xls-import-muted">กรมธรรม์ (FDH): ส่งออกไฟล์จาก <a href="https://fdh.moph.go.th/fwf/login" target="_blank" rel="noopener noreferrer">ระบบ FDH</a> เมนูกรมธรรม์ทั้งหมด แล้วอัปโหลดโดยไม่แก้ไขไฟล์</p>
         </aside>

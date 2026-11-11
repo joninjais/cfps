@@ -10,7 +10,7 @@ use frontend\models\ReferClaim;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 /* @var $hospitals array */
 
-$this->title = 'ค่ารักษาผู้ป่วยนอกส่งต่อ (นค.1)';
+$this->title = 'บันทึกข้อมูลค่ารักษาส่งต่อต่างจังหวัด (นค.1)';
 $this->params['breadcrumbs'][] = $this->title;
 
 $flashes = Yii::$app->session->getAllFlashes();
@@ -65,9 +65,11 @@ $flashes = Yii::$app->session->getAllFlashes();
             ['attribute' => 'dateserv', 'value' => function ($m) { return ReferClaim::isoToThai($m->dateserv); }],
             'refer_number',
             'hn',
+            'seq_an',
             'name',
             ['attribute' => 'cost_total', 'format' => ['decimal', 2], 'hAlign' => 'right', 'filter' => false],
             ['attribute' => 'claim_amount', 'format' => ['decimal', 2], 'hAlign' => 'right', 'filter' => false],
+
             [
                 'attribute' => 'approved_status',
                 'filter'    => ReferClaim::approvedStatusList(),
@@ -92,6 +94,35 @@ $flashes = Yii::$app->session->getAllFlashes();
                                 . "if(confirm('ยืนยันเปลี่ยนสถานะการอนุมัติเป็น \"'+t+'\" ?')){this.form.submit();}"
                                 . "else{this.value=this.getAttribute('data-old');}",
                         ])
+                        . Html::endForm();
+                },
+            ],
+            [
+                'attribute' => 'pay_total',
+                'format' => ['decimal', 2],
+                'hAlign' => 'right',
+                'filterInputOptions' => ['class' => 'form-control', 'type' => 'number', 'min' => 0, 'step' => '0.01'],
+            ],
+            [
+                'attribute' => 'note',
+                'format' => 'raw',
+                'filter' => false,
+                'contentOptions' => ['style' => 'min-width:260px'],
+                'value' => static function ($m) {
+                    return Html::beginForm(['note', 'id' => $m->rcid], 'post', ['style' => 'margin:0'])
+                        . Html::hiddenInput('from', 'index')
+                        . Html::hiddenInput(Yii::$app->request->csrfParam, Yii::$app->request->getCsrfToken())
+                        . Html::textInput('note', $m->note, [
+                            'class' => 'form-control input-sm',
+                            'maxlength' => 255,
+                            'aria-label' => 'หมายเหตุ: ' . (string)$m->refer_number,
+                            'placeholder' => 'เพิ่มหมายเหตุ',
+                        ])
+                        . '<div style="margin-top:4px">'
+                        . Html::submitButton('<i class="fa fa-save" aria-hidden="true"></i> บันทึก', [
+                            'class' => 'btn btn-default btn-xs',
+                        ])
+                        . '</div>'
                         . Html::endForm();
                 },
             ],

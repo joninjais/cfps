@@ -29,7 +29,7 @@ class ExcelImportHeaders
             $column = Coordinate::stringFromColumnIndex($i);
             $value = $sheet->getCell($column . '1')->getValue();
             if ($i <= count($expected)) {
-                if ($value !== $expected[$i - 1]) {
+                if (!is_scalar($value) || strcasecmp((string)$value, $expected[$i - 1]) !== 0) {
                     $errors[] = $column . ' ต้องเป็น ' . $expected[$i - 1];
                 }
             } elseif ($value !== null && $value !== '') {
