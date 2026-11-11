@@ -7,7 +7,11 @@ use frontend\models\Insurancepolicies;
 use frontend\models\InsurancepoliciesSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\BadRequestHttpException;
+use yii\web\ForbiddenHttpException;
 use yii\filters\VerbFilter;
+use yii\db\Expression;
+use yii\db\Query;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
@@ -56,57 +60,82 @@ class InsurancepoliciesController extends BaseController
     public function actionDashboard()
     {
         $session = Yii::$app->session;
-        $hoscode = $session['hoscode'];
+        $hoscode = trim((string)$session['hoscode']);
         $isAdmin = ($hoscode === '00064');
+        if ($hoscode === '') {
+            throw new ForbiddenHttpException('ไม่พบรหัสหน่วยงานใน session');
+        }
 
-        $db = Yii::$app->db;
+        $today = new \DateTimeImmutable('today');
+        $currentFiscalYear = (int)$today->format('Y') + ((int)$today->format('n') >= 10 ? 1 : 0) + 543;
+        $yearParam = Yii::$app->request->get('fiscal_year', (string)$currentFiscalYear);
+        $monthParam = Yii::$app->request->get('month', '');
+        $allParam = Yii::$app->request->get('all', '');
+        $agencyParam = Yii::$app->request->get('agency', '');
+        if (!is_string($yearParam) || !preg_match('/^\d{4,5}$/D', $yearParam)
+            || (int)$yearParam < 2444 || (int)$yearParam > 10541
+            || !is_string($monthParam) || ($monthParam !== '' && !preg_match('/^(?:[1-9]|1[0-2])$/D', $monthParam))
+            || !is_string($allParam) || !in_array($allParam, ['', '1'], true)
+            || ($allParam === '1' && $monthParam !== '')) {
+            throw new BadRequestHttpException('ปีงบประมาณหรือเดือนที่เลือกไม่ถูกต้อง');
+        }
+        if (!is_string($agencyParam) || mb_strlen($agencyParam) > 20) {
+            throw new BadRequestHttpException('รหัสหน่วยงานไม่ถูกต้อง');
+        }
+        if (!$isAdmin && $agencyParam !== '') {
+            throw new ForbiddenHttpException('ไม่มีสิทธิ์เลือกหน่วยงานอื่น');
+        }
+        $agencies = [];
+        if ($isAdmin) {
+            $agencyRows = (new Query())->select([
+                'agency_code',
+                'agency_name' => new Expression('MAX(agency_name)'),
+            ])->from('insurance_policies')
+                ->where(['not', ['agency_code' => null]])
+                ->andWhere(['<>', 'agency_code', ''])
+                ->groupBy('agency_code')
+                ->orderBy(['agency_code' => SORT_ASC])->all();
+            foreach ($agencyRows as $agencyRow) {
+                $code = $agencyRow['agency_code'];
+                $agencies[$code] = $code . ($agencyRow['agency_name'] ? ' - ' . $agencyRow['agency_name'] : '');
+            }
+            if ($agencyParam !== '' && !array_key_exists($agencyParam, $agencies)) {
+                throw new BadRequestHttpException('ไม่พบหน่วยงานที่เลือก');
+            }
+        }
+        $fiscalYear = (int)$yearParam;
+        $month = $monthParam === '' ? null : (int)$monthParam;
+        $showAll = $allParam === '1';
+        $year = $fiscalYear - 543;
+        $start = null;
+        $end = null;
+        if (!$showAll) {
+            $start = $month === null
+                ? new \DateTimeImmutable(sprintf('%04d-10-01', $year - 1))
+                : new \DateTimeImmutable(sprintf('%04d-%02d-01', $year - ($month >= 10 ? 1 : 0), $month));
+            $end = $month === null ? $start->modify('+1 year') : $start->modify('+1 month');
+        }
 
-        // สรุปรวมทั้งหมด
-        $totalQuery = $db->createCommand("
-            SELECT COUNT(*) AS cnt, COALESCE(SUM(card_price), 0) AS total_amount
-            FROM insurance_policies
-            " . ($isAdmin ? "" : "WHERE agency_code LIKE :hoscode")
-        );
-        if (!$isAdmin) $totalQuery->bindValue(':hoscode', '%' . $hoscode . '%');
-        $totals = $totalQuery->queryOne();
-
-        // นับแยกตามราคาบัตร
-        $byPriceQuery = $db->createCommand("
-            SELECT card_price, COUNT(*) AS cnt, COALESCE(SUM(card_price), 0) AS total_amount,
-                   policy_status
-            FROM insurance_policies
-            " . ($isAdmin ? "" : "WHERE agency_code LIKE :hoscode") . "
-            GROUP BY card_price, policy_status
-            ORDER BY card_price, policy_status
-        ");
-        if (!$isAdmin) $byPriceQuery->bindValue(':hoscode', '%' . $hoscode . '%');
-        $byPrice = $byPriceQuery->queryAll();
-
-        // นับแยกตามหน่วยงาน + ราคาบัตร
-        $byAgencyQuery = $db->createCommand("
-            SELECT agency_code, agency_name, card_price, COUNT(*) AS cnt,
-                   COALESCE(SUM(card_price), 0) AS total_amount
-            FROM insurance_policies
-            " . ($isAdmin ? "" : "WHERE agency_code LIKE :hoscode") . "
-            GROUP BY agency_code, agency_name, card_price
-            ORDER BY agency_name, card_price
-        ");
-        if (!$isAdmin) $byAgencyQuery->bindValue(':hoscode', '%' . $hoscode . '%');
-        $byAgency = $byAgencyQuery->queryAll();
-
-        // นับแยกตามเดือน/ปี ที่ซื้อ
-        $byMonthQuery = $db->createCommand("
-            SELECT DATE_FORMAT(purchase_date, '%Y-%m') AS ym,
-                   COUNT(*) AS cnt,
-                   COALESCE(SUM(card_price), 0) AS total_amount
-            FROM insurance_policies
-            " . ($isAdmin ? "WHERE purchase_date IS NOT NULL" : "WHERE agency_code LIKE :hoscode AND purchase_date IS NOT NULL") . "
-            GROUP BY ym
-            ORDER BY ym DESC
-            LIMIT 24
-        ");
-        if (!$isAdmin) $byMonthQuery->bindValue(':hoscode', '%' . $hoscode . '%');
-        $byMonth = $byMonthQuery->queryAll();
+        $baseQuery = (new Query())->from('insurance_policies');
+        if (!$isAdmin) {
+            $baseQuery->andWhere(['like', 'agency_code', $hoscode]);
+        } elseif ($agencyParam !== '') {
+            $baseQuery->andWhere(['agency_code' => $agencyParam]);
+        }
+        if ($start !== null) {
+            $baseQuery->andWhere(['>=', 'purchase_date', $start->format('Y-m-d')])
+                ->andWhere(['<', 'purchase_date', $end->format('Y-m-d')]);
+        }
+        $aggregates = ['cnt' => new Expression('COUNT(*)'), 'total_amount' => new Expression('COALESCE(SUM(card_price), 0)')];
+        $totals = (clone $baseQuery)->select($aggregates)->one();
+        $byPrice = (clone $baseQuery)->select(array_merge(['card_price', 'policy_status'], $aggregates))
+            ->groupBy(['card_price', 'policy_status'])->orderBy(['card_price' => SORT_ASC, 'policy_status' => SORT_ASC])->all();
+        $byAgency = (clone $baseQuery)->select(array_merge(['agency_code', 'agency_name', 'card_price'], $aggregates))
+            ->groupBy(['agency_code', 'agency_name', 'card_price'])->orderBy(['agency_name' => SORT_ASC, 'card_price' => SORT_ASC])->all();
+        $byMonth = (clone $baseQuery)
+            ->select(array_merge(['ym' => new Expression("DATE_FORMAT(purchase_date, '%Y-%m')")], $aggregates))
+            ->andWhere(['not', ['purchase_date' => null]])
+            ->groupBy('ym')->orderBy(['ym' => SORT_DESC])->limit(24)->all();
 
         return $this->render('dashboard', [
             'totals'    => $totals,
@@ -114,6 +143,14 @@ class InsurancepoliciesController extends BaseController
             'byAgency'  => $byAgency,
             'byMonth'   => $byMonth,
             'isAdmin'   => $isAdmin,
+            'agencies' => $agencies,
+            'selectedAgency' => $agencyParam,
+            'fiscalYear' => $fiscalYear,
+            'currentFiscalYear' => $currentFiscalYear,
+            'month' => $month,
+            'showAll' => $showAll,
+            'start' => $start,
+            'end' => $end,
         ]);
     }
 

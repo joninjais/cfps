@@ -12,6 +12,27 @@ $this->title = 'Dashboard : สรุปข้อมูลกรมธรรม�
 $this->params['breadcrumbs'][] = ['label' => 'ข้อมูลกรมธรรม์', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
+$months = [
+    10 => 'ต.ค.', 11 => 'พ.ย.', 12 => 'ธ.ค.', 1 => 'ม.ค.',
+    2 => 'ก.พ.', 3 => 'มี.ค.', 4 => 'เม.ย.', 5 => 'พ.ค.',
+    6 => 'มิ.ย.', 7 => 'ก.ค.', 8 => 'ส.ค.', 9 => 'ก.ย.',
+];
+$agencyFilter = $isAdmin && $selectedAgency !== '' ? ['agency' => $selectedAgency] : [];
+
+$this->registerCss('
+.db-filter { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 18px 22px; margin-bottom: 24px; }
+.db-filter h2 { font-size: 1.15rem; font-weight: 700; color: #00796b; margin: 0 0 12px; }
+.db-filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.db-filter .btn:focus-visible { outline: 3px solid #005c53; outline-offset: 2px; }
+.db-filter .btn.active { background: #00796b; color: #fff; border-color: #00796b; }
+.db-filter-period { margin: 0; color: #555; }
+.db-table-scroll { overflow-x: auto; }
+.db-agency-form { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-bottom: 16px; }
+.db-agency-field { flex: 1 1 260px; max-width: 500px; }
+.db-agency-form label { display: block; }
+.db-agency-form select:focus-visible { outline: 3px solid #005c53; outline-offset: 2px; }
+');
+
 // --- Prepare chart data ---
 $priceCounts  = [];
 $priceLabels  = [];
@@ -103,6 +124,73 @@ table.db-table tfoot td { background: #00796b; color: #fff; font-weight: 700; }
     <a href="<?= Url::to(['insurancepolicies/index']) ?>" class="btn-back"><i class="fa fa-arrow-left"></i> กลับหน้ารายการ</a>
     <div class="db-title"><i class="fa fa-bar-chart"></i> Dashboard : สรุปข้อมูลกรมธรรม์</div>
 
+    <section class="db-filter" aria-labelledby="policy-period-heading">
+        <?php if ($isAdmin): ?>
+            <?= Html::beginForm(['dashboard'], 'get', ['class' => 'db-agency-form']) ?>
+                <?= Html::hiddenInput('fiscal_year', $fiscalYear) ?>
+                <?php if ($showAll): ?>
+                    <?= Html::hiddenInput('all', '1') ?>
+                <?php else: ?>
+                    <?php if ($month !== null): ?>
+                        <?= Html::hiddenInput('month', $month) ?>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <div class="db-agency-field">
+                    <?= Html::label('หน่วยงาน / โรงพยาบาล', 'policy-agency') ?>
+                    <?= Html::dropDownList('agency', $selectedAgency, $agencies, [
+                        'id' => 'policy-agency', 'class' => 'form-control', 'prompt' => 'ทุกหน่วยงาน',
+                    ]) ?>
+                </div>
+                <?= Html::submitButton('แสดงข้อมูล', ['class' => 'btn btn-success']) ?>
+            <?= Html::endForm() ?>
+        <?php endif; ?>
+        <h2 id="policy-period-heading"><i class="fa fa-calendar-o" aria-hidden="true"></i> ปีงบประมาณ <?= Html::encode($fiscalYear) ?></h2>
+        <div class="db-filter-row" aria-label="เลือกปีงบประมาณ">
+            <?php for ($i = 0; $i < 6; $i++): $y = $currentFiscalYear - $i; ?>
+                <?= Html::a('ปีงบ ' . $y, array_merge(['dashboard', 'fiscal_year' => $y], $agencyFilter), [
+                    'class' => 'btn btn-success' . (!$showAll && $month === null && $y === $fiscalYear ? ' active' : ''),
+                    'aria-current' => !$showAll && $month === null && $y === $fiscalYear ? 'true' : null,
+                ]) ?>
+            <?php endfor; ?>
+            <?= Html::a('ทุกช่วงเวลา', array_merge(['dashboard', 'all' => 1, 'fiscal_year' => $fiscalYear], $agencyFilter), [
+                'class' => 'btn btn-default' . ($showAll ? ' active' : ''),
+                'aria-current' => $showAll ? 'true' : null,
+            ]) ?>
+        </div>
+        <div class="db-filter-row" aria-label="เลือกเดือนในปีงบประมาณ">
+            <?= Html::a('ทั้งปีงบ ' . $fiscalYear, array_merge(['dashboard', 'fiscal_year' => $fiscalYear], $agencyFilter), [
+                'class' => 'btn btn-default' . (!$showAll && $month === null ? ' active' : ''),
+                'aria-current' => !$showAll && $month === null ? 'true' : null,
+            ]) ?>
+            <?php if ($fiscalYear > 2444): ?>
+                <?= Html::a('<i class="fa fa-chevron-left" aria-hidden="true"></i>', array_merge(['dashboard', 'fiscal_year' => $fiscalYear - 1], $agencyFilter), [
+                    'class' => 'btn btn-default', 'title' => 'ปีงบก่อน', 'aria-label' => 'ปีงบก่อน',
+                ]) ?>
+            <?php endif; ?>
+            <?php foreach ($months as $number => $label): ?>
+                <?php $monthYear = $fiscalYear - ($number >= 10 ? 1 : 0); ?>
+                <?= Html::a($label . ' ' . substr((string)$monthYear, -2), array_merge(['dashboard', 'fiscal_year' => $fiscalYear, 'month' => $number], $agencyFilter), [
+                    'class' => 'btn btn-default' . (!$showAll && $month === $number ? ' active' : ''),
+                    'aria-current' => !$showAll && $month === $number ? 'true' : null,
+                    'aria-label' => $label . ' พ.ศ. ' . $monthYear,
+                ]) ?>
+            <?php endforeach; ?>
+            <?php if ($fiscalYear < 10541): ?>
+                <?= Html::a('<i class="fa fa-chevron-right" aria-hidden="true"></i>', array_merge(['dashboard', 'fiscal_year' => $fiscalYear + 1], $agencyFilter), [
+                    'class' => 'btn btn-default', 'title' => 'ปีงบถัดไป', 'aria-label' => 'ปีงบถัดไป',
+                ]) ?>
+            <?php endif; ?>
+        </div>
+        <p class="db-filter-period">
+            <?php if ($showAll): ?>
+                วันที่ซื้อกรมธรรม์: ทุกช่วงเวลา (รวมรายการที่ไม่มีวันที่ซื้อ)
+            <?php else: ?>
+                วันที่ซื้อกรมธรรม์: <?= Html::encode($start->format('d/m/') . ((int)$start->format('Y') + 543)) ?>
+                ถึง <?= Html::encode($end->modify('-1 day')->format('d/m/') . ((int)$end->modify('-1 day')->format('Y') + 543)) ?> (พ.ศ.)
+            <?php endif; ?>
+        </p>
+    </section>
+
     <!-- Summary Cards -->
     <div class="db-cards">
         <div class="db-card">
@@ -138,6 +226,7 @@ table.db-table tfoot td { background: #00796b; color: #fff; font-weight: 700; }
     <!-- Table: by card_price + policy_status -->
     <div class="db-section">
         <h3><i class="fa fa-table"></i> สรุปจำนวน แยกตามราคาบัตร และสถานะ</h3>
+        <div class="db-table-scroll">
         <table class="db-table">
             <thead>
                 <tr>
@@ -173,6 +262,7 @@ table.db-table tfoot td { background: #00796b; color: #fff; font-weight: 700; }
                 </tr>
             </tfoot>
         </table>
+        </div>
     </div>
 
     <!-- Table: by agency + card_price -->
@@ -217,7 +307,7 @@ table.db-table tfoot td { background: #00796b; color: #fff; font-weight: 700; }
 
     <!-- Table: by month -->
     <div class="db-section">
-        <h3><i class="fa fa-calendar"></i> สรุปรายเดือน (ล่าสุด 24 เดือน)</h3>
+        <h3><i class="fa fa-calendar"></i> สรุปรายเดือน<?= $showAll ? ' (ล่าสุด 24 เดือน)' : ' ตามช่วงเวลาที่เลือก' ?></h3>
         <div style="overflow-x:auto;">
         <table class="db-table">
             <thead>

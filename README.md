@@ -75,3 +75,10 @@ policies are skipped rather than updated; rows without a non-zero card price
 are also skipped as before. The migration does not remove existing data and
 cannot be rolled back automatically because the added columns may contain
 imported data. Back up the database before applying schema changes.
+
+The insurance dashboard filters all summaries by purchase date, defaulting to
+the current Thai fiscal year (October through September). Select a fiscal year,
+an individual month, or all periods; all periods also includes records without
+a purchase date.
+Users at agency `00064` can also filter the dashboard by a single agency or
+view all agencies; other users cannot select an agency.
