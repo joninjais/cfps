@@ -11,8 +11,7 @@ class OpaController extends BaseController
     {
         $session = Yii::$app->session;
         $hoscode=$session['hoscode'];
-        $facilityCodesSql = $this->facilityCodesSql();
-        $facilityCodesSql = $this->facilityCodesSql();
+        $hospitalFacilityCodesSql = $this->hospitalFacilityCodesSql();
 
         $data = Yii::$app->request->get();
         $date1 = $data['date1'] ?? '';
@@ -27,7 +26,7 @@ class OpaController extends BaseController
         FROM
         opdata
         WHERE
-        opdata.hospcode IN ($facilityCodesSql)
+        opdata.hospcode IN ($hospitalFacilityCodesSql)
         and opdata.FundHolderID != 'ccccc'
         and opdata.dateserv between ':startDate' and ':endDate'
         and op_pp_type = 'op'

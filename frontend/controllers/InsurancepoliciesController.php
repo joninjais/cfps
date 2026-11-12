@@ -162,6 +162,91 @@ class InsurancepoliciesController extends BaseController
     }
 
     /**
+     * รายงานสรุปการขายบัตร แยกตามหน่วยบริการ (CUP) และประเภทบัตร พร้อมการจัดสรรเงิน
+     */
+    public function actionReport()
+    {
+        $hoscode = trim((string)Yii::$app->session['hoscode']);
+        if ($hoscode === '') {
+            throw new ForbiddenHttpException('ไม่พบรหัสหน่วยงานใน session');
+        }
+
+        $today = new \DateTimeImmutable('today');
+        $currentFiscalYear = (int)$today->format('Y') + ((int)$today->format('n') >= 10 ? 1 : 0) + 543;
+        $yearParam = Yii::$app->request->get('fiscal_year', (string)$currentFiscalYear);
+        $monthParam = Yii::$app->request->get('month', '');
+        if (!is_string($yearParam) || !preg_match('/^\d{4,5}$/D', $yearParam)
+            || (int)$yearParam < 2444 || (int)$yearParam > 10541
+            || !is_string($monthParam) || ($monthParam !== '' && !preg_match('/^(?:[1-9]|1[0-2])$/D', $monthParam))) {
+            throw new BadRequestHttpException('ปีงบประมาณหรือเดือนที่เลือกไม่ถูกต้อง');
+        }
+        $fiscalYear = (int)$yearParam;
+        $month = $monthParam === '' ? null : (int)$monthParam;
+        $year = $fiscalYear - 543;
+        $start = $month === null
+            ? new \DateTimeImmutable(sprintf('%04d-10-01', $year - 1))
+            : new \DateTimeImmutable(sprintf('%04d-%02d-01', $year - ($month >= 10 ? 1 : 0), $month));
+        $end = $month === null ? $start->modify('+1 year') : $start->modify('+1 month');
+
+        $visible = $this->isProvincialAdmin()
+            ? Yii::$app->facilityAccess->provincialFacilityCodes()
+            : Yii::$app->facilityAccess->visibleFacilityCodes();
+
+        $hospitals = (new Query())->select(['hospcode', 'hosname'])->from('chospital2')
+            ->where(['provcode' => '82'])
+            ->andWhere('hospcode = cupcode')
+            ->andWhere(['<>', 'hospcode', '00064'])
+            ->andWhere(['hospcode' => $visible])
+            ->orderBy(['hospcode' => SORT_ASC])->all();
+
+        $cards = (new Query())->select(['card_id', 'description', 'price' => new Expression('CAST(price AS DECIMAL(10,2))')])
+            ->from('card')->orderBy(['price' => SORT_ASC, 'card_id' => SORT_ASC])->all();
+
+        // ยอดจัดสรรต่อบัตร: claim -> หน่วยบริการ, P&P + บริหารจัดการ (สสจ) -> สสจ, HC + บริหารจัดการ (สป) -> ส่วนกลาง
+        $alloc = [];
+        $typeRows = (new Query())->select(['card_id', 'description', 'sentprice', 'price' => new Expression('CAST(price AS DECIMAL(10,2))')])
+            ->from('typeprice')->all();
+        foreach ($typeRows as $t) {
+            $key = $t['sentprice'] === 'สป' ? 'central' : ($t['description'] === 'claim' ? 'unit' : 'provincial');
+            $alloc[(int)$t['card_id']][$key] = ($alloc[(int)$t['card_id']][$key] ?? 0) + (float)$t['price'];
+        }
+
+        $rows = (new Query())->select(['agency_code', 'card_price', 'cnt' => new Expression('COUNT(*)')])
+            ->from('insurance_policies')
+            ->where(['agency_code' => array_column($hospitals, 'hospcode')])
+            ->andWhere(['>=', 'purchase_date', $start->format('Y-m-d')])
+            ->andWhere(['<', 'purchase_date', $end->format('Y-m-d')])
+            ->groupBy(['agency_code', 'card_price'])->all();
+
+        $priceToCard = [];
+        foreach ($cards as $c) {
+            $priceToCard[number_format((float)$c['price'], 2, '.', '')] = (int)$c['card_id'];
+        }
+        $data = [];
+        foreach ($rows as $r) {
+            $cid = $priceToCard[number_format((float)$r['card_price'], 2, '.', '')] ?? 0;
+            $d = &$data[$r['agency_code']];
+            $d['cards'][$cid] = ($d['cards'][$cid] ?? 0) + (int)$r['cnt'];
+            $d['amount'] = ($d['amount'] ?? 0) + (float)$r['card_price'] * (int)$r['cnt'];
+            foreach (['unit', 'provincial', 'central'] as $k) {
+                $d[$k] = ($d[$k] ?? 0) + ($alloc[$cid][$k] ?? 0) * (int)$r['cnt'];
+            }
+            unset($d);
+        }
+
+        return $this->render('report', [
+            'hospitals' => $hospitals,
+            'cards' => $cards,
+            'data' => $data,
+            'fiscalYear' => $fiscalYear,
+            'currentFiscalYear' => $currentFiscalYear,
+            'month' => $month,
+            'start' => $start,
+            'end' => $end,
+        ]);
+    }
+
+    /**
      * Lists all Insurancepolicies models.
      * @return mixed
      */

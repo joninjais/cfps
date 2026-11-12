@@ -4,7 +4,7 @@ use yii\helpers\Html;
 /* @var $this \yii\web\View */
 /* @var $content string */
 
-if (in_array(Yii::$app->controller->action->id, ['login', 'change-password'])) {
+if (in_array(Yii::$app->controller->action->id, ['login', 'signup', 'change-password'])) {
     echo $this->render('main-login', ['content' => $content]);
 } else {
 

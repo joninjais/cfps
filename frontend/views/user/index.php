@@ -24,7 +24,12 @@ $this->title = 'จัดการผู้ใช้งาน';
         <div class="alert alert-danger"><?= Html::encode(Yii::$app->session->getFlash('error')) ?></div>
     <?php endif; ?>
 
-    <p><?= Html::a('<i class="fa fa-plus"></i> เพิ่มผู้ใช้', ['create'], ['class' => 'btn btn-success']) ?></p>
+    <?= $this->render('_registration-status', ['window' => $registrationWindow]) ?>
+
+    <p>
+        <?= Html::a('<i class="fa fa-plus"></i> เพิ่มผู้ใช้', ['create'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('ตั้งค่าเปิดรับสมัคร', ['registration'], ['class' => 'btn btn-default']) ?>
+    </p>
 
     <?= GridView::widget([
         'dataProvider' => $dataProvider,

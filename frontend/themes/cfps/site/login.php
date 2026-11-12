@@ -103,6 +103,9 @@ $fieldOptions2 = [
     </div>
     <div class="login-box-msg">เข้าสู่ระบบ</div>
 
+    <?php if (Yii::$app->session->hasFlash('success')): ?>
+      <div class="alert alert-success"><?= Html::encode(Yii::$app->session->getFlash('success')) ?></div>
+    <?php endif; ?>
     <?php if (Yii::$app->session->hasFlash('error')): ?>
       <div class="alert alert-danger alert-dismissible">
         <button type="button" class="close" data-dismiss="alert">&times;</button>
@@ -133,5 +136,6 @@ $fieldOptions2 = [
     </div>
 
     <?php ActiveForm::end(); ?>
+    <?= $this->render('@frontend/views/site/_registration-link') ?>
   </div>
 </div>

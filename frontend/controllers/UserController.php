@@ -5,6 +5,8 @@ namespace frontend\controllers;
 use Yii;
 use frontend\models\User;
 use frontend\models\UserSearch;
+use frontend\models\RegistrationWindowForm;
+use frontend\components\RegistrationWindow;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -27,9 +29,31 @@ class UserController extends BaseController
                     'approve' => ['POST'],
                     'reject' => ['POST'],
                     'toggle-admin' => ['POST'],
+                    'registration-close' => ['POST'],
                 ],
             ],
         ];
+    }
+
+    public function actionRegistration()
+    {
+        $model = new RegistrationWindowForm();
+        if (Yii::$app->request->isPost && $model->load(Yii::$app->request->post()) && $model->validate()) {
+            RegistrationWindow::open($model->minutes());
+            Yii::$app->session->setFlash('success', 'เปิดรับสมัครแล้ว ลิงก์ของรอบก่อนหน้าใช้ไม่ได้');
+            return $this->redirect(['registration']);
+        }
+        return $this->render('registration', [
+            'model' => $model,
+            'window' => RegistrationWindow::current(),
+        ]);
+    }
+
+    public function actionRegistrationClose()
+    {
+        RegistrationWindow::close();
+        Yii::$app->session->setFlash('success', 'ปิดรับสมัครแล้ว');
+        return $this->redirect(['registration']);
     }
 
     public function beforeAction($action)
@@ -88,6 +112,7 @@ class UserController extends BaseController
             'adminUserIds' => $adminUserIds,
             'userManagerIds' => $userManagerIds,
             'canManageAdminRoles' => $this->isDesignatedAdmin(),
+            'registrationWindow' => RegistrationWindow::current(),
         ]);
     }
 

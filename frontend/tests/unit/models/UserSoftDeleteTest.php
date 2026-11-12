@@ -97,10 +97,49 @@ class UserSoftDeleteTest extends TestCase
         self::assertNull(User::findIdentity(2));
         self::assertNull($this->app->authManager->getAssignment('hospitalStaff', '2'));
         $ids = array_map(static fn($user) => (int)$user->userid, (new UserSearch())->search([])->getModels());
-        self::assertSame([1, 3], $ids);
+        self::assertSame([3, 1], $ids);
 
         $this->expectException(NotFoundHttpException::class);
         $this->controller->actionDelete(2);
+    }
+
+    public function testNewestUsersAppearFirstAcrossPagesAndFilters(): void
+    {
+        for ($id = 5; $id <= 27; $id++) {
+            $this->app->db->createCommand()->insert('user', [
+                'userid' => $id,
+                'user' => 'new-user-' . $id,
+                'hoscode' => '00001',
+                'approval_status' => User::APPROVAL_PENDING,
+            ])->execute();
+        }
+        $this->app->db->createCommand()->update('user', ['is_deleted' => 1], ['userid' => 27])->execute();
+        $provider = (new UserSearch())->search([]);
+        $ids = array_map(static fn($user) => (int)$user->userid, $provider->getModels());
+        self::assertCount(20, $ids);
+        self::assertSame(26, $ids[0]);
+        self::assertNotContains(27, $ids);
+        self::assertNotContains(4, $ids);
+        $provider->pagination->setPage(1);
+        $provider->refresh();
+        $secondPage = array_map(static fn($user) => (int)$user->userid, $provider->getModels());
+        self::assertSame([6, 5, 3, 2, 1], $secondPage);
+
+        $filtered = (new UserSearch())->search(['UserSearch' => ['user' => 'new-user-2']]);
+        self::assertSame([26, 25, 24, 23, 22, 21, 20], array_map(
+            static fn($user) => (int)$user->userid,
+            $filtered->getModels()
+        ));
+    }
+
+    public function testExplicitUserSortOverridesDefaultOrder(): void
+    {
+        $this->app->request->setQueryParams(['sort' => 'user']);
+        $provider = (new UserSearch())->search([]);
+        self::assertSame(['active', 'admin', 'pending'], array_map(
+            static fn($user) => $user->user,
+            $provider->getModels()
+        ));
     }
 
     public function testPendingAccountCannotBeApprovedAfterDeletion(): void

@@ -89,6 +89,15 @@ facility-scoped permissions for file operations and imports are unchanged.
 
 ### User access and approval
 
+Run `php yii migrate` to install the registration window table. Users with
+`manageUsers` can open or close self-registration from the user-management
+page, choosing 30 minutes, 1 or 2 hours, or a custom duration up to one year.
+Opening a new window invalidates the previous link immediately; closing or
+expiry also prevents submissions from already-open forms. The login page
+checks the status every 10 seconds without a reload. The user-management page
+also shows the remaining time and refreshes the status automatically. Without
+JavaScript, both pages show the status at page load; reload to check again.
+
 The frontend uses Yii RBAC roles with facility-scoped data access:
 
 | Role | Read scope | Write and management scope |
@@ -99,7 +108,8 @@ The frontend uses Yii RBAC roles with facility-scoped data access:
 | PCU staff (`pcuStaff`) | Own facility only | Own facility only |
 
 Self-registered accounts remain pending and cannot sign in until approved by a
-provincial administrator. The account at facility `00064` can grant or remove
+user manager. Registration requires a phone number (up to 10 characters) and
+matching password confirmation. The account at facility `00064` can grant or remove
 the delegated `userManager` role. It is assigned in addition to the account's
 hospital/PCU role, so these users keep the normal facility home page and data
 access and gain only the user-management menu. They cannot manage other

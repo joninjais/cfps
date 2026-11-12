@@ -31,6 +31,20 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public $newPassword;
     public $newPasswordConfirm;
 
+    public function beforeValidate()
+    {
+        if (!parent::beforeValidate()) {
+            return false;
+        }
+
+        // Legacy schemas require hmain even though accounts now use hoscode.
+        if ($this->isNewRecord && $this->hasAttribute('hmain') && $this->hmain === null) {
+            $this->hmain = $this->hoscode;
+        }
+
+        return true;
+    }
+
     /** ชื่อ-นามสกุล เต็ม (virtual) */
     public function getDisplayName(): string
     {

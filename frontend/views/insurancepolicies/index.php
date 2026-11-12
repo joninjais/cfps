@@ -57,6 +57,7 @@ table.db-table tfoot td { background: #00796b; color: #fff; font-weight: 700; }
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
     <div>
         <a href="<?= Url::to(['insurancepolicies/dashboard']) ?>" class="btn-back"> Dashboard<i class="fa fa-arrow-right"></i></a>
+        <a href="<?= Url::to(['insurancepolicies/report']) ?>" class="btn-back"> รายงานสรุปการขายบัตร<i class="fa fa-arrow-right"></i></a>
     </div>
     <div>
         <?= Html::beginForm(['insurancepolicies/clear-policies'], 'post', [

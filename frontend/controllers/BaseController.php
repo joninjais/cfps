@@ -67,6 +67,16 @@ class BaseController extends \yii\web\Controller
         ));
     }
 
+    /** subquery รหัสเฉพาะ รพ. (hospcode = cupcode) ภายในขอบเขตที่อนุญาต ไม่รวม รพ.สต. */
+    protected function hospitalFacilityCodesSql(): string
+    {
+        $facilityCodesSql = $this->facilityCodesSql();
+
+        return "SELECT DISTINCT chospital2.hospcode FROM chospital2
+            WHERE chospital2.hospcode IN ($facilityCodesSql)
+            AND chospital2.hospcode = chospital2.cupcode";
+    }
+
     /**
      * ตรวจสิทธิ์การนำเข้าไฟล์ xlsfileuploads
      * - บัญชีทั่วไป: ไฟล์และทุกแถวต้องอยู่ในหน่วยบริการตนเอง

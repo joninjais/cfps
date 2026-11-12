@@ -14,6 +14,9 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="site-login">
     <h1><?= Html::encode($this->title) ?></h1>
 
+    <?php if (Yii::$app->session->hasFlash('success')): ?>
+        <div class="alert alert-success"><?= Html::encode(Yii::$app->session->getFlash('success')) ?></div>
+    <?php endif; ?>
     <p>Please fill out the following fields to login:</p>
 
     <div class="row">
@@ -31,6 +34,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
 
             <?php ActiveForm::end(); ?>
+            <?= $this->render('_registration-link') ?>
         </div>
     </div>
 </div>

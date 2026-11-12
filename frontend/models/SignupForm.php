@@ -13,6 +13,8 @@ class SignupForm extends Model
     public $username;
     public $email;
     public $password;
+    public $passwordConfirm;
+    public $phonenumber;
     public $fname;
     public $lname;
     public $hoscode;
@@ -37,6 +39,11 @@ class SignupForm extends Model
 
             ['password', 'required'],
             ['password', 'match', 'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/', 'message' => 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข'],
+            ['passwordConfirm', 'required'],
+            ['passwordConfirm', 'compare', 'compareAttribute' => 'password', 'message' => 'รหัสผ่านและการยืนยันต้องตรงกัน'],
+            ['phonenumber', 'trim'],
+            ['phonenumber', 'required'],
+            ['phonenumber', 'string', 'max' => 10],
             [['fname', 'lname'], 'trim'],
             [['fname', 'lname', 'hoscode', 'requestedRole'], 'required'],
             [['fname', 'lname'], 'string', 'max' => 100],
@@ -52,6 +59,8 @@ class SignupForm extends Model
             'username' => 'ชื่อผู้ใช้',
             'email' => 'อีเมล',
             'password' => 'รหัสผ่าน',
+            'passwordConfirm' => 'ยืนยันรหัสผ่าน',
+            'phonenumber' => 'เบอร์โทรศัพท์',
             'fname' => 'ชื่อ',
             'lname' => 'นามสกุล',
             'hoscode' => 'รหัสหน่วยบริการ',
@@ -110,6 +119,7 @@ class SignupForm extends Model
         $user = new User();
         $user->user = $this->username;
         $user->email = $this->email;
+        $user->phonenumber = $this->phonenumber;
         $user->fname = $this->fname;
         $user->lname = $this->lname;
         $user->hoscode = $this->hoscode;
