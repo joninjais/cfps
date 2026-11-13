@@ -162,7 +162,8 @@ class InsurancepoliciesController extends BaseController
     }
 
     /**
-     * รายงานสรุปการขายบัตร แยกตามหน่วยบริการ (CUP) และประเภทบัตร พร้อมการจัดสรรเงิน
+     * รายงานสรุปการขายบัตร แยกตามหน่วยบริการ (CUP) และราคาบัตร พร้อมการจัดสรรเงิน (จากตาราง fwfdatabase)
+     * ตัวกรอง date1/date2 เป็น พ.ศ. เหมือนหน้าแรก; export=1 ส่งออกเป็น Excel
      */
     public function actionReport()
     {
@@ -171,22 +172,24 @@ class InsurancepoliciesController extends BaseController
             throw new ForbiddenHttpException('ไม่พบรหัสหน่วยงานใน session');
         }
 
+        $request = Yii::$app->request;
         $today = new \DateTimeImmutable('today');
-        $currentFiscalYear = (int)$today->format('Y') + ((int)$today->format('n') >= 10 ? 1 : 0) + 543;
-        $yearParam = Yii::$app->request->get('fiscal_year', (string)$currentFiscalYear);
-        $monthParam = Yii::$app->request->get('month', '');
-        if (!is_string($yearParam) || !preg_match('/^\d{4,5}$/D', $yearParam)
-            || (int)$yearParam < 2444 || (int)$yearParam > 10541
-            || !is_string($monthParam) || ($monthParam !== '' && !preg_match('/^(?:[1-9]|1[0-2])$/D', $monthParam))) {
-            throw new BadRequestHttpException('ปีงบประมาณหรือเดือนที่เลือกไม่ถูกต้อง');
+        $date1 = $request->get('date1', '');
+        $date2 = $request->get('date2', '');
+        if (!is_string($date1) || !is_string($date2)) {
+            throw new BadRequestHttpException('ช่วงวันที่ไม่ถูกต้อง');
         }
-        $fiscalYear = (int)$yearParam;
-        $month = $monthParam === '' ? null : (int)$monthParam;
-        $year = $fiscalYear - 543;
-        $start = $month === null
-            ? new \DateTimeImmutable(sprintf('%04d-10-01', $year - 1))
-            : new \DateTimeImmutable(sprintf('%04d-%02d-01', $year - ($month >= 10 ? 1 : 0), $month));
-        $end = $month === null ? $start->modify('+1 year') : $start->modify('+1 month');
+        if ($date1 === '' && $date2 === '') {
+            $fy = (int)$today->format('Y') + ((int)$today->format('n') >= 10 ? 1 : 0);
+            $start = new \DateTimeImmutable(($fy - 1) . '-10-01');
+            $end = new \DateTimeImmutable($fy . '-09-30');
+        } else {
+            $start = $this->parseThaiDate($date1);
+            $end = $this->parseThaiDate($date2);
+            if ($start > $end) {
+                throw new BadRequestHttpException('วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด');
+            }
+        }
 
         $visible = $this->isProvincialAdmin()
             ? Yii::$app->facilityAccess->provincialFacilityCodes()
@@ -202,21 +205,22 @@ class InsurancepoliciesController extends BaseController
         $cards = (new Query())->select(['card_id', 'description', 'price' => new Expression('CAST(price AS DECIMAL(10,2))')])
             ->from('card')->orderBy(['price' => SORT_ASC, 'card_id' => SORT_ASC])->all();
 
-        // ยอดจัดสรรต่อบัตร: claim -> หน่วยบริการ, P&P + บริหารจัดการ (สสจ) -> สสจ, HC + บริหารจัดการ (สป) -> ส่วนกลาง
-        $alloc = [];
-        $typeRows = (new Query())->select(['card_id', 'description', 'sentprice', 'price' => new Expression('CAST(price AS DECIMAL(10,2))')])
-            ->from('typeprice')->all();
-        foreach ($typeRows as $t) {
-            $key = $t['sentprice'] === 'สป' ? 'central' : ($t['description'] === 'claim' ? 'unit' : 'provincial');
-            $alloc[(int)$t['card_id']][$key] = ($alloc[(int)$t['card_id']][$key] ?? 0) + (float)$t['price'];
-        }
-
-        $rows = (new Query())->select(['agency_code', 'card_price', 'cnt' => new Expression('COUNT(*)')])
-            ->from('insurance_policies')
-            ->where(['agency_code' => array_column($hospitals, 'hospcode')])
-            ->andWhere(['>=', 'purchase_date', $start->format('Y-m-d')])
-            ->andWhere(['<', 'purchase_date', $end->format('Y-m-d')])
-            ->groupBy(['agency_code', 'card_price'])->all();
+        $sum = static fn(string $col) => new Expression("COALESCE(SUM($col), 0)");
+        $rows = (new Query())->select([
+            'FundHolderID',
+            'card_price',
+            'cnt' => new Expression('COUNT(*)'),
+            'amount' => $sum('card_price'),
+            'unit' => $sum('claim'),
+            'pp' => $sum('pp'),
+            'man_ssj' => $sum('man_ssj'),
+            'hc_sp' => $sum('hc_sp'),
+            'man_sp' => $sum('man_sp'),
+        ])->from('fwfdatabase')
+            ->where(['FundHolderID' => array_column($hospitals, 'hospcode')])
+            ->andWhere(['>=', 'PeriodStartDate', $start->format('Y-m-d')])
+            ->andWhere(['<=', 'PeriodStartDate', $end->format('Y-m-d')])
+            ->groupBy(['FundHolderID', 'card_price'])->all();
 
         $priceToCard = [];
         foreach ($cards as $c) {
@@ -225,25 +229,122 @@ class InsurancepoliciesController extends BaseController
         $data = [];
         foreach ($rows as $r) {
             $cid = $priceToCard[number_format((float)$r['card_price'], 2, '.', '')] ?? 0;
-            $d = &$data[$r['agency_code']];
+            $d = &$data[$r['FundHolderID']];
             $d['cards'][$cid] = ($d['cards'][$cid] ?? 0) + (int)$r['cnt'];
-            $d['amount'] = ($d['amount'] ?? 0) + (float)$r['card_price'] * (int)$r['cnt'];
-            foreach (['unit', 'provincial', 'central'] as $k) {
-                $d[$k] = ($d[$k] ?? 0) + ($alloc[$cid][$k] ?? 0) * (int)$r['cnt'];
+            foreach (['amount', 'unit', 'pp', 'man_ssj', 'hc_sp', 'man_sp'] as $k) {
+                $d[$k] = ($d[$k] ?? 0) + (float)$r[$k];
             }
             unset($d);
+        }
+
+        if ($request->get('export') === '1') {
+            return $this->exportReport($hospitals, $cards, $data, $start, $end);
         }
 
         return $this->render('report', [
             'hospitals' => $hospitals,
             'cards' => $cards,
             'data' => $data,
-            'fiscalYear' => $fiscalYear,
-            'currentFiscalYear' => $currentFiscalYear,
-            'month' => $month,
             'start' => $start,
             'end' => $end,
         ]);
+    }
+
+    /** แปลงวันที่ พ.ศ. (yyyy-mm-dd หรือ yyyy/mm/dd) เป็น DateTimeImmutable (ค.ศ.) */
+    private function parseThaiDate(string $value): \DateTimeImmutable
+    {
+        if (!preg_match('#^(\d{4})[-/](\d{2})[-/](\d{2})$#D', $value, $m)) {
+            throw new BadRequestHttpException('รูปแบบวันที่ไม่ถูกต้อง');
+        }
+        $year = (int)$m[1] - 543;
+        if ($year < 1 || !checkdate((int)$m[2], (int)$m[3], $year)) {
+            throw new BadRequestHttpException('วันที่ไม่ถูกต้อง');
+        }
+        return new \DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $m[2], $m[3]));
+    }
+
+    private function exportReport(array $hospitals, array $cards, array $data, \DateTimeImmutable $start, \DateTimeImmutable $end)
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $ws = $spreadsheet->getActiveSheet();
+        $ws->setTitle('สรุปการขายบัตร');
+        $thai = static fn(\DateTimeImmutable $d) => $d->format('d/m/') . ((int)$d->format('Y') + 543);
+
+        $ws->setCellValueExplicit('A1', 'รายงานสรุปการขายบัตรต่างด้าว', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $ws->setCellValueExplicit('A2', 'วันที่เริ่มงวด ' . $thai($start) . ' - ' . $thai($end), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+
+        $headers = ['ลำดับ', 'รหัส', 'หน่วยบริการ'];
+        foreach ($cards as $c) {
+            $headers[] = number_format((float)$c['price']);
+        }
+        $headers = array_merge($headers, [
+            'อื่นๆ', 'รวม (ใบ)', 'รวมเงิน (บาท)', 'หน่วยบริการ (Claim)',
+            'สสจ. PP', 'สสจ. บริหาร', 'สป. HC', 'สป. บริหาร',
+        ]);
+        $colIds = array_merge(array_map('intval', array_column($cards, 'card_id')), [0]);
+        $moneyKeys = ['amount', 'unit', 'pp', 'man_ssj', 'hc_sp', 'man_sp'];
+
+        $hr = 4;
+        foreach ($headers as $i => $h) {
+            $ws->setCellValueExplicit([$i + 1, $hr], (string)$h, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        }
+
+        $tot = array_fill_keys($moneyKeys, 0);
+        $totCards = [];
+        $totCount = 0;
+        $row = $hr;
+        foreach ($hospitals as $i => $h) {
+            $row++;
+            $d = $data[$h['hospcode']] ?? [];
+            $col = 1;
+            $ws->setCellValue([$col++, $row], $i + 1);
+            $ws->setCellValueExplicit([$col++, $row], (string)$h['hospcode'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $ws->setCellValueExplicit([$col++, $row], (string)$h['hosname'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            foreach ($colIds as $cid) {
+                $n = $d['cards'][$cid] ?? 0;
+                $totCards[$cid] = ($totCards[$cid] ?? 0) + $n;
+                $ws->setCellValue([$col++, $row], $n);
+            }
+            $count = array_sum($d['cards'] ?? []);
+            $totCount += $count;
+            $ws->setCellValue([$col++, $row], $count);
+            foreach ($moneyKeys as $k) {
+                $tot[$k] += $d[$k] ?? 0;
+                $ws->setCellValue([$col++, $row], $d[$k] ?? 0);
+            }
+        }
+        $row++;
+        $col = 1;
+        $ws->setCellValueExplicit([3, $row], 'รวมทั้งหมด', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $col = 4;
+        foreach ($colIds as $cid) {
+            $ws->setCellValue([$col++, $row], $totCards[$cid] ?? 0);
+        }
+        $ws->setCellValue([$col++, $row], $totCount);
+        foreach ($moneyKeys as $k) {
+            $ws->setCellValue([$col++, $row], $tot[$k]);
+        }
+
+        $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+        $ws->getStyle("A{$hr}:{$lastCol}{$hr}")->getFont()->setBold(true);
+        $ws->getStyle("A{$row}:{$lastCol}{$row}")->getFont()->setBold(true);
+        $ws->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $moneyStart = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers) - 5);
+        $ws->getStyle("{$moneyStart}" . ($hr + 1) . ":{$lastCol}{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+        for ($i = 1; $i <= count($headers); $i++) {
+            $ws->getColumnDimensionByColumn($i)->setAutoSize(true);
+        }
+
+        $tmp = tempnam(sys_get_temp_dir(), 'rpt');
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($tmp);
+        $content = file_get_contents($tmp);
+        unlink($tmp);
+
+        return Yii::$app->response->sendContentAsFile(
+            $content,
+            'fwf_card_sales_' . $start->format('Ymd') . '_' . $end->format('Ymd') . '.xlsx',
+            ['mimeType' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
     }
 
     /**

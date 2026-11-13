@@ -1,14 +1,12 @@
 <?php
 use yii\helpers\Html;
 use yii\helpers\Url;
+use karatae99\datepicker\DatePicker;
 
 /* @var $this yii\web\View */
 /* @var $hospitals array */
 /* @var $cards array */
 /* @var $data array */
-/* @var $fiscalYear int */
-/* @var $currentFiscalYear int */
-/* @var $month int|null */
 /* @var $start \DateTimeImmutable */
 /* @var $end \DateTimeImmutable */
 
@@ -16,15 +14,19 @@ $this->title = 'รายงานสรุปการขายบัตรต�
 $this->params['breadcrumbs'][] = ['label' => 'ข้อมูลกรมธรรม์', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
-$months = [
-    10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม', 1 => 'มกราคม',
-    2 => 'กุมภาพันธ์', 3 => 'มีนาคม', 4 => 'เมษายน', 5 => 'พฤษภาคม',
-    6 => 'มิถุนายน', 7 => 'กรกฎาคม', 8 => 'สิงหาคม', 9 => 'กันยายน',
-];
+$be = static fn(\DateTimeImmutable $d) => ((int)$d->format('Y') + 543) . $d->format('-m-d');
+$date1 = $be($start);
+$date2 = $be($end);
+$fy = (int)$end->format('Y') + ((int)$end->format('n') >= 10 ? 1 : 0) + 543;
+$nowFy = (int)date('Y') + ((int)date('n') >= 10 ? 1 : 0) + 543;
+$monthLabels = [10 => 'ต.ค.', 11 => 'พ.ย.', 12 => 'ธ.ค.', 1 => 'ม.ค.', 2 => 'ก.พ.', 3 => 'มี.ค.',
+    4 => 'เม.ย.', 5 => 'พ.ค.', 6 => 'มิ.ย.', 7 => 'ก.ค.', 8 => 'ส.ค.', 9 => 'ก.ย.'];
 
 $this->registerCss('
 .rp-page { font-family: "Sarabun","Prompt",Arial,sans-serif; padding: 16px; }
 .rp-filter { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 16px; }
+.rp-fy { margin-bottom: 8px; }
+.rp-date { width: 200px; }
 .rp-scroll { overflow-x: auto; }
 .rp-table th, .rp-table td { white-space: nowrap; vertical-align: middle !important; }
 .rp-table thead th { background: #00796b; color: #fff; text-align: center; }
@@ -42,34 +44,46 @@ foreach ($data as $d) {
     }
 }
 $colIds = $hasOther ? array_merge($cardIds, [0]) : $cardIds;
-$sum = ['count' => 0, 'amount' => 0, 'unit' => 0, 'provincial' => 0, 'central' => 0, 'cards' => []];
+$allocKeys = ['unit', 'pp', 'man_ssj', 'hc_sp', 'man_sp'];
+$sum = ['count' => 0, 'amount' => 0, 'unit' => 0, 'pp' => 0, 'man_ssj' => 0, 'hc_sp' => 0, 'man_sp' => 0, 'cards' => []];
 ?>
 <div class="rp-page">
     <h3><?= Html::encode($this->title) ?></h3>
 
+    <div class="rp-fy">
+        <?php for ($y = $nowFy; $y > $nowFy - 6; $y--): ?>
+            <?= Html::a('ปีงบ ' . $y, ['insurancepolicies/report', 'date1' => ($y - 1) . '-10-01', 'date2' => $y . '-09-30'],
+                ['class' => 'btn btn-success' . ($y === $fy ? ' active' : '')]) ?>
+        <?php endfor; ?>
+    </div>
+    <div class="rp-fy">
+        <?php foreach ($monthLabels as $m => $label):
+            $y = $m >= 10 ? $fy - 1 : $fy;
+            $last = (int)(new \DateTimeImmutable(sprintf('%04d-%02d-01', $y - 543, $m)))->format('t');
+            ?>
+            <?= Html::a($label . ' ' . substr((string)$y, 2, 2),
+                ['insurancepolicies/report', 'date1' => sprintf('%d-%02d-01', $y, $m), 'date2' => sprintf('%d-%02d-%02d', $y, $m, $last)],
+                ['class' => 'btn btn-default']) ?>
+        <?php endforeach; ?>
+    </div>
+
     <form method="get" action="<?= Html::encode(Url::to(['insurancepolicies/report'])) ?>" class="rp-filter">
-        <div>
-            <label for="rp-year">ปีงบประมาณ</label>
-            <select id="rp-year" name="fiscal_year" class="form-control">
-                <?php for ($y = $currentFiscalYear; $y >= $currentFiscalYear - 4; $y--): ?>
-                    <option value="<?= $y ?>"<?= $y === $fiscalYear ? ' selected' : '' ?>><?= $y ?></option>
-                <?php endfor; ?>
-            </select>
-        </div>
-        <div>
-            <label for="rp-month">เดือน</label>
-            <select id="rp-month" name="month" class="form-control">
-                <option value="">ทั้งปีงบประมาณ</option>
-                <?php foreach ($months as $m => $label): ?>
-                    <option value="<?= $m ?>"<?= $m === $month ? ' selected' : '' ?>><?= Html::encode($label) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-success">แสดงรายงาน</button>
+        <div class="rp-date"><?= DatePicker::widget([
+            'name' => 'date1', 'value' => $date1, 'template' => '{addon}{input}', 'language' => 'th',
+            'clientOptions' => ['autoclose' => true, 'format' => 'yyyy/mm/dd'],
+        ]) ?></div>
+        <div class="rp-date"><?= DatePicker::widget([
+            'name' => 'date2', 'value' => $date2, 'template' => '{addon}{input}', 'language' => 'th',
+            'clientOptions' => ['autoclose' => true, 'format' => 'yyyy/mm/dd'],
+        ]) ?></div>
+        <button type="submit" class="btn btn-success"><i class="fa fa-search"></i> ค้นหา</button>
+        <?= Html::a('<i class="fa fa-file-excel-o"></i> ส่งออก Excel',
+            ['insurancepolicies/report', 'date1' => $date1, 'date2' => $date2, 'export' => 1],
+            ['class' => 'btn btn-primary']) ?>
     </form>
 
-    <p>วันที่ซื้อกรมธรรม์: <?= Html::encode($start->format('d/m/') . ((int)$start->format('Y') + 543)) ?>
-        - <?= Html::encode($end->modify('-1 day')->format('d/m/') . ((int)$end->modify('-1 day')->format('Y') + 543)) ?></p>
+    <p>วันที่เริ่มงวด: <?= Html::encode($start->format('d/m/') . ((int)$start->format('Y') + 543)) ?>
+        - <?= Html::encode($end->format('d/m/') . ((int)$end->format('Y') + 543)) ?></p>
 
     <div class="rp-scroll">
         <table class="table table-bordered table-striped rp-table">
@@ -81,7 +95,7 @@ $sum = ['count' => 0, 'amount' => 0, 'unit' => 0, 'provincial' => 0, 'central' =
                     <th colspan="<?= count($colIds) ?>">จำนวนบัตรแยกตามประเภท (ใบ)</th>
                     <th rowspan="2">รวม (ใบ)</th>
                     <th rowspan="2">รวมเงิน (บาท)</th>
-                    <th colspan="3">การจัดสรรเงิน (บาท)</th>
+                    <th colspan="5">การจัดสรรเงิน (บาท)</th>
                 </tr>
                 <tr>
                     <?php foreach ($cards as $c): ?>
@@ -89,19 +103,22 @@ $sum = ['count' => 0, 'amount' => 0, 'unit' => 0, 'provincial' => 0, 'central' =
                     <?php endforeach; ?>
                     <?php if ($hasOther): ?><th>อื่นๆ</th><?php endif; ?>
                     <th>หน่วยบริการ (Claim)</th>
-                    <th>สสจ. (PP+บริหาร)</th>
-                    <th>ส่วนกลาง (HC+บริหาร)</th>
+                    <th>สสจ. PP</th>
+                    <th>สสจ. บริหาร</th>
+                    <th>สป. HC</th>
+                    <th>สป. บริหาร</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (!$hospitals): ?>
-                    <tr><td colspan="<?= count($colIds) + 8 ?>" class="text-center">ไม่พบข้อมูล</td></tr>
+                    <tr><td colspan="<?= count($colIds) + 10 ?>" class="text-center">ไม่พบข้อมูล</td></tr>
                 <?php endif; ?>
                 <?php foreach ($hospitals as $i => $h):
                     $d = $data[$h['hospcode']] ?? [];
                     $count = array_sum($d['cards'] ?? []);
                     $sum['count'] += $count;
-                    foreach (['amount', 'unit', 'provincial', 'central'] as $k) {
+                    $sum['amount'] += $d['amount'] ?? 0;
+                    foreach ($allocKeys as $k) {
                         $sum[$k] += $d[$k] ?? 0;
                     }
                     ?>
@@ -117,9 +134,9 @@ $sum = ['count' => 0, 'amount' => 0, 'unit' => 0, 'provincial' => 0, 'central' =
                         <?php endforeach; ?>
                         <td class="rp-num"><?= number_format($count) ?></td>
                         <td class="rp-num"><?= $fmt($d['amount'] ?? 0) ?></td>
-                        <td class="rp-num"><?= $fmt($d['unit'] ?? 0) ?></td>
-                        <td class="rp-num"><?= $fmt($d['provincial'] ?? 0) ?></td>
-                        <td class="rp-num"><?= $fmt($d['central'] ?? 0) ?></td>
+                        <?php foreach ($allocKeys as $k): ?>
+                            <td class="rp-num"><?= $fmt($d[$k] ?? 0) ?></td>
+                        <?php endforeach; ?>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -131,9 +148,9 @@ $sum = ['count' => 0, 'amount' => 0, 'unit' => 0, 'provincial' => 0, 'central' =
                     <?php endforeach; ?>
                     <td class="rp-num"><?= number_format($sum['count']) ?></td>
                     <td class="rp-num"><?= $fmt($sum['amount']) ?></td>
-                    <td class="rp-num"><?= $fmt($sum['unit']) ?></td>
-                    <td class="rp-num"><?= $fmt($sum['provincial']) ?></td>
-                    <td class="rp-num"><?= $fmt($sum['central']) ?></td>
+                    <?php foreach ($allocKeys as $k): ?>
+                        <td class="rp-num"><?= $fmt($sum[$k]) ?></td>
+                    <?php endforeach; ?>
                 </tr>
             </tfoot>
         </table>
