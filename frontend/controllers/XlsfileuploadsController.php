@@ -57,6 +57,9 @@ class XlsfileuploadsController extends BaseController
     {
         $id = (int) $id;
         $model = $this->findModel($id, true);
+        if ($model->typefileupload === 'fwfhealth') {
+            throw new \yii\web\BadRequestHttpException('ไม่รองรับการนำเข้าข้อมูลบัตรประกันสุขภาพแล้ว');
+        }
         if ($id > 0 && $model->xlsid) {
             Yii::$app->db->createCommand()
                 ->update('xlsfileuploads', ['importstatus' => 0, 'startdatetime' => null, 'enddatetime' => null], ['xlsid' => $id])
@@ -89,6 +92,9 @@ class XlsfileuploadsController extends BaseController
         $model = new Xlsfileuploads();
 
         if ($model->load(Yii::$app->request->post())) {
+            if ($model->typefileupload === 'fwfhealth') {
+                $model->addError('typefileupload', 'ไม่รองรับการนำเข้าข้อมูลบัตรประกันสุขภาพแล้ว');
+            }
             if (!$this->isProvincialAdmin()) {
                 $model->user = (string)Yii::$app->session->get('user');
                 $model->hoscode = trim((string)Yii::$app->session->get('hoscode'));
@@ -136,6 +142,9 @@ class XlsfileuploadsController extends BaseController
         if ($model->load(Yii::$app->request->post())
             && $model->validate(['user', 'hoscode', 'typefileupload'])
         ) {
+            if ($model->typefileupload === 'fwfhealth') {
+                $model->addError('typefileupload', 'ไม่รองรับการนำเข้าข้อมูลบัตรประกันสุขภาพแล้ว');
+            }
             if (!$this->isProvincialAdmin()) {
                 $model->user = (string)Yii::$app->session->get('user');
                 $model->hoscode = trim((string)Yii::$app->session->get('hoscode'));
@@ -182,20 +191,16 @@ class XlsfileuploadsController extends BaseController
             $criteria = ['exsfile' => $fileName];
             if ($model->typefileupload === 'ip' || $model->typefileupload === 'op pp') {
                 $criteria['hospcode'] = $codes;
-            } elseif ($model->typefileupload === 'fwfhealth') {
-                Yii::$app->facilityAccess->requirePermission('manageFwfData');
-                $criteria['hcode'] = $codes;
             } elseif ($model->typefileupload === 'fwfdata') {
                 Yii::$app->facilityAccess->requirePermission('manageFwfData');
                 $criteria['FundHolderID'] = $codes;
-            } elseif ($model->typefileupload !== 'insurance') {
+            } elseif (!in_array($model->typefileupload, ['insurance', 'fwfhealth'], true)) {
                 throw new \yii\web\ForbiddenHttpException('ไม่มีสิทธิ์ลบข้อมูลนำเข้าประเภทนี้');
             }
 
             $table = [
                 'ip' => 'ipdata',
                 'op pp' => 'opdata',
-                'fwfhealth' => 'fwfhealth',
                 'fwfdata' => 'fwfdatabase',
             ][$model->typefileupload] ?? null;
             if ($table !== null) {

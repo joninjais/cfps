@@ -74,42 +74,6 @@ CREATE TABLE `fwfdatabase` (
   KEY `idx_fwf_cid_period` (`CID`,`PeriodStartDate`,`PeriodEndDate`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 SQL,
-        'fwfhealth' => <<<'SQL'
-CREATE TABLE `fwfhealth` (
-  `fwfhealth_id` int(11) NOT NULL AUTO_INCREMENT,
-  `datev` varchar(50) DEFAULT NULL,
-  `hcode` varchar(5) DEFAULT NULL,
-  `cid` varchar(13) DEFAULT NULL,
-  `prefix` varchar(50) DEFAULT NULL,
-  `fname` varchar(255) DEFAULT NULL,
-  `lname` varchar(255) DEFAULT NULL,
-  `birthday` varchar(255) DEFAULT NULL,
-  `nation` varchar(255) DEFAULT NULL,
-  `type_mg` varchar(255) DEFAULT NULL,
-  `sex` varchar(255) DEFAULT NULL,
-  `address` varchar(255) DEFAULT NULL,
-  `company` varchar(255) DEFAULT NULL,
-  `bossname` varchar(255) DEFAULT NULL,
-  `tel` varchar(255) DEFAULT NULL,
-  `hn` varchar(255) DEFAULT NULL,
-  `vn` varchar(255) DEFAULT NULL,
-  `card_id` varchar(255) DEFAULT NULL COMMENT 'ราคาบัตร',
-  `typehealth_id` varchar(255) DEFAULT NULL COMMENT 'ประเภทผลตรวจสุขภาพ',
-  `diesease_id` varchar(255) DEFAULT NULL COMMENT 'โรคที่เป็น',
-  `check_card` varchar(255) DEFAULT NULL,
-  `exsfile` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`fwfhealth_id`) USING BTREE,
-  KEY `fwfhealth_id` (`fwfhealth_id`) USING BTREE,
-  KEY `datev` (`datev`) USING BTREE,
-  KEY `hcode` (`hcode`) USING BTREE,
-  KEY `cid` (`cid`) USING BTREE,
-  KEY `hn` (`hn`) USING BTREE,
-  KEY `vn` (`vn`) USING BTREE,
-  KEY `card_id` (`card_id`) USING BTREE,
-  KEY `check_card` (`check_card`) USING BTREE,
-  KEY `exsfile` (`exsfile`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-SQL,
         'health_office_stg' => <<<'SQL'
 CREATE TABLE `health_office_stg` (
   `row_no` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ลำดับแถวที่นำเข้า (ไม่มีใน Excel)',
@@ -416,18 +380,6 @@ CREATE TABLE `typeprice` (
   PRIMARY KEY (`typeprice_id`) USING BTREE,
   KEY `idx_typeprice_card_id` (`card_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-SQL,
-        'user_tmp' => <<<'SQL'
-CREATE TABLE `user_tmp` (
-  `fname` varchar(255) DEFAULT NULL,
-  `lname` varchar(255) DEFAULT NULL,
-  `user` varchar(255) DEFAULT NULL,
-  `pass` varchar(255) DEFAULT NULL,
-  `orgname` varchar(255) DEFAULT NULL,
-  `hoscode` varchar(255) DEFAULT NULL,
-  `phonenumber` varchar(255) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 SQL,
         'xlsfileuploads' => <<<'SQL'
 CREATE TABLE `xlsfileuploads` (

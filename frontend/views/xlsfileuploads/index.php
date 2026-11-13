@@ -55,6 +55,9 @@ $this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['dmstr\web\
                         'filter' => false,
                         'format' => 'raw',
                         'value' => static function ($model) {
+                            if ($model->typefileupload === 'fwfhealth') {
+                                return '<span class="xls-import-status">ยกเลิกการใช้งาน</span>';
+                            }
                             return (int)$model->importstatus === 0
                                 ? '<span class="xls-import-status is-pending">รอนำเข้า</span>'
                                 : '<span class="xls-import-status is-complete">นำเข้าแล้ว</span>';
@@ -88,13 +91,15 @@ $this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['dmstr\web\
                                     ]);
                                 }
                             }
-                            $actions[] = Html::a('เตรียมนำเข้าอีกครั้ง', ['reimport', 'id' => $model->xlsid], [
-                                'class' => 'btn btn-default btn-sm',
-                                'data' => [
-                                    'method' => 'post',
-                                    'confirm' => 'ยืนยันการเตรียมไฟล์เพื่อนำเข้าอีกครั้ง? การดำเนินการนี้ยังไม่นำเข้าข้อมูล',
-                                ],
-                            ]);
+                            if ($model->typefileupload !== 'fwfhealth') {
+                                $actions[] = Html::a('เตรียมนำเข้าอีกครั้ง', ['reimport', 'id' => $model->xlsid], [
+                                    'class' => 'btn btn-default btn-sm',
+                                    'data' => [
+                                        'method' => 'post',
+                                        'confirm' => 'ยืนยันการเตรียมไฟล์เพื่อนำเข้าอีกครั้ง? การดำเนินการนี้ยังไม่นำเข้าข้อมูล',
+                                    ],
+                                ]);
+                            }
                             $actions[] = Html::a('ลบ', ['delete', 'id' => $model->xlsid], [
                                 'class' => 'btn btn-danger btn-sm',
                                 'data' => [

@@ -12,6 +12,7 @@ $this->params['breadcrumbs'][] = ['label' => 'รายการไฟล์น�
 $this->params['breadcrumbs'][] = $this->title;
 $this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['dmstr\web\AdminLteAsset']]);
 $imported = (int)$model->importstatus !== 0;
+$retired = $model->typefileupload === 'fwfhealth';
 ?>
 <div class="xls-import-page">
     <div class="xls-import-heading">
@@ -23,9 +24,9 @@ $imported = (int)$model->importstatus !== 0;
     </div>
     <section class="xls-import-card">
         <div class="xls-import-status <?= $imported ? 'is-complete' : 'is-pending' ?>">
-            <?= $imported ? 'นำเข้าข้อมูลแล้ว' : 'อัปโหลดไฟล์แล้ว · รอนำเข้าข้อมูล' ?>
+            <?= $retired ? 'ยกเลิกการใช้งานประเภทไฟล์นี้แล้ว' : ($imported ? 'นำเข้าข้อมูลแล้ว' : 'อัปโหลดไฟล์แล้ว · รอนำเข้าข้อมูล') ?>
         </div>
-        <?php if (!$imported): ?>
+        <?php if (!$imported && !$retired): ?>
             <p class="xls-import-muted">การอัปโหลดไฟล์ยังไม่ใช่การนำเข้าข้อมูล กรุณากดปุ่มนำเข้าข้อมูลเพื่อดำเนินการต่อ</p>
         <?php endif; ?>
         <section class="xls-import-details" aria-labelledby="xls-import-details-title">

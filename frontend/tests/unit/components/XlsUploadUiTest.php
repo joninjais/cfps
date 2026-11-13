@@ -9,6 +9,8 @@ use PHPUnit\Framework\TestCase;
 use Yii;
 use yii\data\ArrayDataProvider;
 use yii\web\Application;
+use yii\web\BadRequestHttpException;
+use yii\web\ForbiddenHttpException;
 use yii\web\Session;
 use yii\web\UploadedFile;
 
@@ -78,6 +80,7 @@ class XlsUploadUiTest extends TestCase
             return ['user' => 'tester', 'hoscode' => '00064'][$key] ?? null;
         });
         $this->app->set('session', $session);
+        $this->app->set('facilityAccess', new RetiredUploadFacilityAccess());
         $this->app->db->createCommand(
             'CREATE TABLE xlsfileuploads (xlsid INTEGER PRIMARY KEY, exsfile TEXT, hoscode TEXT, user TEXT, typefileupload TEXT, uploaddatetime TEXT, startdatetime TEXT, enddatetime TEXT, importstatus INTEGER DEFAULT 0)'
         )->execute();
@@ -167,5 +170,79 @@ class XlsUploadUiTest extends TestCase
         $row = $this->app->db->createCommand('SELECT exsfile, typefileupload FROM xlsfileuploads WHERE xlsid = 1')->queryOne();
         self::assertSame('original.xlsx', $row['exsfile']);
         self::assertSame('op pp', $row['typefileupload']);
+    }
+
+    public function testRetiredUploadCanBeDeletedButNotReimported(): void
+    {
+        $access = new RetiredUploadFacilityAccess();
+        $this->app->set('facilityAccess', $access);
+        $this->app->db->createCommand()->insert('xlsfileuploads', [
+            'xlsid' => 2,
+            'exsfile' => 'retired-test.xlsx',
+            'user' => 'tester',
+            'hoscode' => '00064',
+            'typefileupload' => 'fwfhealth',
+            'importstatus' => 0,
+        ])->execute();
+
+        $model = Xlsfileuploads::findOne(2);
+        $html = $this->controller->renderPartial('index', [
+            'dataProvider' => new ArrayDataProvider(['allModels' => [$model], 'pagination' => false]),
+            'searchModel' => new XlsfileuploadsSearch(),
+        ]);
+        self::assertStringNotContainsString('เตรียมนำเข้าอีกครั้ง', $html);
+        self::assertStringContainsString('ยกเลิกการใช้งาน', $html);
+        self::assertStringContainsString('ลบ', $html);
+        try {
+            $this->controller->actionReimport(2);
+            self::fail('Retired uploads must not be reimported.');
+        } catch (BadRequestHttpException $exception) {
+            self::assertSame(0, (int)Xlsfileuploads::findOne(2)->importstatus);
+        }
+
+        $access->allowed = false;
+        try {
+            $this->controller->actionDelete(2);
+            self::fail('Deleting a retired upload requires permission.');
+        } catch (ForbiddenHttpException $exception) {
+            self::assertNotNull(Xlsfileuploads::findOne(2));
+        }
+        $access->allowed = true;
+        self::assertSame(302, $this->controller->actionDelete(2)->statusCode);
+        self::assertNull(Xlsfileuploads::findOne(2));
+    }
+
+    public function testProvincialAdminCannotCreateOrUpdateRetiredUploadType(): void
+    {
+        $this->app->set('facilityAccess', new RetiredUploadFacilityAccess());
+        $controller = new UploadUiController('xlsfileuploads', $this->app);
+        $this->app->request->setBodyParams([
+            'Xlsfileuploads' => ['user' => 'tester', 'hoscode' => '00064', 'typefileupload' => 'fwfhealth'],
+        ]);
+        self::assertSame('create', $controller->actionCreate());
+        self::assertNotEmpty($controller->renderedModel->getErrors('typefileupload'));
+
+        $this->app->db->createCommand()->insert('xlsfileuploads', [
+            'xlsid' => 3, 'exsfile' => 'existing.xlsx', 'user' => 'tester',
+            'hoscode' => '00064', 'typefileupload' => 'ip',
+        ])->execute();
+        self::assertSame('update', $controller->actionUpdate(3));
+        self::assertNotEmpty($controller->renderedModel->getErrors('typefileupload'));
+        self::assertSame('ip', Xlsfileuploads::findOne(3)->typefileupload);
+    }
+}
+
+class RetiredUploadFacilityAccess extends \yii\base\Component
+{
+    public $allowed = true;
+
+    public function isProvincialAdmin(): bool { return true; }
+    public function canAccessFacility($code, $forWrite = false): bool { return true; }
+    public function provincialFacilityCodes(): array { return ['00064']; }
+    public function requirePermission($permission): void
+    {
+        if (!$this->allowed || $permission !== 'manageFwfData') {
+            throw new ForbiddenHttpException();
+        }
     }
 }

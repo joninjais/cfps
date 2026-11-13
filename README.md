@@ -66,6 +66,14 @@ vendor/                  contains dependent 3rd-party packages
 environments/            contains environment-based overrides
 ```
 
+### Retired FWF health data
+
+The FWF health CRUD, import, and reports have been retired. Run `php yii migrate`
+to drop the obsolete `fwfhealth` and `user_tmp` tables from existing databases;
+new installations do not create them. This permanently deletes their contents
+and cannot be rolled back. Back up the database before applying the migration.
+Existing FWF health upload records can still be deleted by authorized users.
+
 ### Insurance policy Excel import
 
 Run `php yii migrate` before importing the current insurance report. The import
