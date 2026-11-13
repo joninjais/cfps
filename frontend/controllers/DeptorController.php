@@ -7,6 +7,10 @@ use yii\data\ArrayDataProvider;
 use yii\helpers\Url;
 use yii\filters\VerbFilter;
 use yii\filters\AccessControl;
+use yii\web\BadRequestHttpException;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class DeptorController extends BaseController
 {
@@ -215,27 +219,20 @@ class DeptorController extends BaseController
             $queryip = Yii::$app->db->createCommand($sqlip)->queryAll();
         }
 
-        $dataProvider = new ArrayDataProvider([
-            'allModels'  => $queryop,
-            'pagination' => ['pageSize' => 10],
-            'sort'       => [
-                'attributes' => ['hospcode', 'hosname', 'total_visit', 'alltotal', 'claim'],
-            ],
-        ]);
-        $dataProvider2 = new ArrayDataProvider([
-            'allModels'  => $querypp,
-            'pagination' => ['pageSize' => 10],
-            'sort'       => [
-                'attributes' => ['hospcode', 'hosname', 'total_visit', 'claim', 'alltotal'],
-            ],
-        ]);
-        $dataProvider3 = new ArrayDataProvider([
-            'allModels'  => $queryip,
-            'pagination' => ['pageSize' => 10],
-            'sort'       => [
-                'attributes' => ['hospcode', 'hosname', 'total_visit', 'claim', 'alltotal'],
-            ],
-        ]);
+        $providers = $this->createReportProviders($data, ['op' => $queryop, 'pp' => $querypp, 'ip' => $queryip]);
+
+        if (isset($data['export']) || isset($data['format'])) {
+            $type = $data['export'] ?? null;
+            $format = $data['format'] ?? null;
+            if (!is_string($type) || !isset($providers[$type]) || !in_array($format, ['csv', 'xlsx', 'txt'], true)) {
+                throw new BadRequestHttpException('รูปแบบการส่งออกไม่ถูกต้อง');
+            }
+            return $this->exportTable($providers[$type], $type, $format);
+        }
+
+        $dataProvider = $providers['op'];
+        $dataProvider2 = $providers['pp'];
+        $dataProvider3 = $providers['ip'];
 
         return $this->render('index', [
             'date1'        => $date1,
@@ -252,6 +249,104 @@ class DeptorController extends BaseController
             'dataProvider3' => $dataProvider3,
 
         ]);
+    }
+
+    private function createReportProviders(array $params, array $datasets): array
+    {
+        $providers = [];
+        foreach ($datasets as $type => $models) {
+            $showAll = ($params[$type . '-all'] ?? $params['all'] ?? null) === '1';
+            $providers[$type] = new ArrayDataProvider([
+                'allModels' => $models,
+                'pagination' => $showAll ? false : [
+                    'pageSize' => 10,
+                    'pageParam' => $type . '-page',
+                    'pageSizeParam' => $type . '-per-page',
+                    'params' => array_merge($params, ['#' => 'deptor-' . $type]),
+                ],
+                'sort' => [
+                    'sortParam' => $type . '-sort',
+                    'params' => array_merge($params, ['#' => 'deptor-' . $type]),
+                    'attributes' => ['hospcode', 'hosname', 'total_visit', 'claim', 'alltotal'],
+                ],
+            ]);
+        }
+        return $providers;
+    }
+
+    private function exportTable(ArrayDataProvider $provider, string $type, string $format)
+    {
+        $headers = ['ลำดับ', 'รหัสสถานพยาบาล', 'ชื่อสถานพยาบาล', 'จำนวนครั้ง', 'ยอดเบิก (บาท)', 'ยอดรวม (บาท)'];
+        $rows = [];
+        $models = array_values($provider->getModels());
+        $pagination = $provider->getPagination();
+        $offset = $pagination === false ? 0 : $pagination->getOffset();
+        foreach ($models as $index => $model) {
+            $rows[] = [
+                $offset + $index + 1,
+                (string)($model['hospcode'] ?? ''),
+                (string)($model['hosname'] ?? ''),
+                $model['total_visit'],
+                $model['claim'],
+                $model['alltotal'],
+            ];
+        }
+
+        $stream = fopen('php://temp', 'w+b');
+        if ($stream === false) {
+            throw new \RuntimeException('ไม่สามารถสร้างไฟล์ส่งออกได้');
+        }
+        try {
+            if ($format === 'xlsx') {
+                $spreadsheet = new Spreadsheet();
+                $sheet = $spreadsheet->getActiveSheet();
+                foreach (array_merge([$headers], $rows) as $rowIndex => $row) {
+                    foreach ($row as $columnIndex => $value) {
+                        $sheet->setCellValueExplicit(
+                            [$columnIndex + 1, $rowIndex + 1],
+                            $rowIndex === 0 || $columnIndex === 1 || $columnIndex === 2 || $value === null
+                                ? (string)$value : (float)$value,
+                            $rowIndex === 0 || $columnIndex === 1 || $columnIndex === 2 || $value === null
+                                ? DataType::TYPE_STRING : DataType::TYPE_NUMERIC
+                        );
+                    }
+                }
+                $sheet->getStyle('A1:F1')->getFont()->setBold(true);
+                $sheet->getStyle('E2:F' . max(2, count($rows) + 1))->getNumberFormat()->setFormatCode('#,##0.00');
+                (new Xlsx($spreadsheet))->save($stream);
+                $spreadsheet->disconnectWorksheets();
+                $mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            } else {
+                fwrite($stream, "\xEF\xBB\xBF");
+                foreach (array_merge([$headers], $rows) as $row) {
+                    foreach ($row as $columnIndex => &$value) {
+                        if (is_string($value)
+                            && ($columnIndex === 1 || $columnIndex === 2 || !is_numeric($value))
+                            && preg_match('/^(?:[\x09\x0a\x0d]|[\s\x00-\x1f]*[=+\-@])/u', $value)) {
+                            $value = "'" . $value;
+                        }
+                    }
+                    unset($value);
+                    if (fputcsv($stream, $row, $format === 'csv' ? ',' : "\t", '"', '') === false) {
+                        throw new \RuntimeException('ไม่สามารถเขียนไฟล์ส่งออกได้');
+                    }
+                }
+                $mime = $format === 'csv' ? 'text/csv' : 'text/plain';
+            }
+            rewind($stream);
+            $content = stream_get_contents($stream);
+            if ($content === false) {
+                throw new \RuntimeException('ไม่สามารถอ่านไฟล์ส่งออกได้');
+            }
+        } finally {
+            fclose($stream);
+        }
+
+        return Yii::$app->response->sendContentAsFile(
+            $content,
+            'deptor_' . $type . '_' . date('Y-m-d') . '.' . $format,
+            ['mimeType' => $mime]
+        );
     }
 
     private function bindDates(string $sql, string $dq1, string $dq2): string

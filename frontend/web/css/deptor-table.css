@@ -1,0 +1,99 @@
+.deptor-report {
+    --report-color: #1565c0;
+    background: #fff;
+    border: 1px solid #dce5ed;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(31, 56, 76, .07);
+    margin-bottom: 18px;
+}
+
+.deptor-report-pp { --report-color: #7b1fa2; }
+.deptor-report-ip { --report-color: #bd3434; }
+
+.deptor-report-header {
+    align-items: center;
+    border-bottom: 1px solid #e6edf2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 14px 16px;
+}
+
+.deptor-report-header h2 {
+    color: #263b4a;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 5px;
+}
+
+.deptor-report-badge {
+    background: var(--report-color);
+    border-radius: 5px;
+    color: #fff;
+    display: inline-block;
+    font-size: .85rem;
+    margin-right: 5px;
+    padding: 4px 8px;
+}
+
+.deptor-report-count {
+    color: #627686;
+    font-size: .9rem;
+    margin: 0;
+}
+
+.deptor-report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.deptor-report-actions .btn:focus-visible,
+.deptor-report a:focus-visible,
+.deptor-table-wrap:focus-visible {
+    outline: 3px solid #1976d2;
+    outline-offset: 2px;
+}
+
+.deptor-table-wrap { border: 0; margin: 0; }
+.deptor-table { margin-bottom: 0; min-width: 720px; }
+.deptor-table > thead > tr > th {
+    background: #f3f7fa;
+    border-bottom: 1px solid #dce5ed;
+    color: #385365;
+    padding: 11px 12px;
+    white-space: nowrap;
+}
+
+.deptor-table > tbody > tr > td {
+    border-top: 1px solid #edf1f4;
+    padding: 10px 12px;
+    vertical-align: middle;
+}
+
+.deptor-table th a { color: inherit; }
+.deptor-table th a.asc::after { content: " ▲"; }
+.deptor-table th a.desc::after { content: " ▼"; }
+.deptor-col-number { text-align: center; width: 55px; }
+.deptor-col-amount { text-align: right; white-space: nowrap; }
+.deptor-table .deptor-empty { color: #627686; padding: 24px; text-align: center; }
+
+.deptor-report-footer {
+    align-items: center;
+    border-top: 1px solid #e6edf2;
+    color: #627686;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: .85rem;
+    gap: 8px;
+    justify-content: space-between;
+    padding: 10px 16px;
+}
+
+.deptor-report-footer .pagination { margin: 0; }
+
+@media (max-width: 767px) {
+    .deptor-report-header { align-items: flex-start; }
+    .deptor-report-actions { width: 100%; }
+}

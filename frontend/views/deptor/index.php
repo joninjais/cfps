@@ -1,8 +1,9 @@
 <?php
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
-use kartik\grid\GridView;
 use karatae99\datepicker\DatePicker;
+
+$this->registerCssFile('@web/css/deptor-table.css?v=' . filemtime(Yii::getAlias('@webroot/css/deptor-table.css')));
 
 // ── Helper: convert CE date to Thai display ──────────────────
 function dashChangeDate($date) {
@@ -436,22 +437,22 @@ $months = [
 
                 <!-- KPI boxes: ยอดเบิกรวมแต่ละประเภท -->
                 <?php
-                // สรุปยอดเบิก (claim) จาก dataProvider หลัก (OP, PP, IP)
+                // สรุปยอดเบิกจากข้อมูลทุกแถว ไม่ขึ้นกับหน้าที่กำลังแสดง
                 $sumClaimOP = 0;
                 $sumClaimPP = 0;
                 $sumClaimIP = 0;
                 $sumAllOP   = 0;
                 $sumAllPP   = 0;
                 $sumAllIP   = 0;
-                foreach ($dataProvider->getModels() as $row) {
+                foreach ($dataProvider->allModels as $row) {
                         $sumClaimOP += $row['claim'] ?? 0;
                         $sumAllOP   += $row['alltotal'] ?? 0;
                 }
-                foreach ($dataProvider2->getModels() as $row) {
+                foreach ($dataProvider2->allModels as $row) {
                         $sumClaimPP += $row['claim'] ?? 0;
                         $sumAllPP   += $row['alltotal'] ?? 0;
                 }
-                foreach ($dataProvider3->getModels() as $row) {
+                foreach ($dataProvider3->allModels as $row) {
                         $sumClaimIP += $row['claim'] ?? 0;
                         $sumAllIP   += $row['alltotal'] ?? 0;
                 }
@@ -500,219 +501,8 @@ $months = [
             <span class="dbar-arrow"><i class="fa fa-long-arrow-right"></i></span>
             <span class="dbar-date"><?= Html::encode($dq2) ?></span>
         </div>
-        <div class="row">
-        <div class="col-md-6">
-        <?php
-echo GridView::widget([
-    'dataProvider' => $dataProvider,
-    'formatter' => [
-        'class'       => 'yii\i18n\Formatter',
-        'nullDisplay' => '-',
-    ],
-    'panel' => [
-        'heading' => '<i class="fa fa-table"></i> ข้อมูลลูกหนี้ตามจ่าย (OP)',
-        'after'   => 'ประมวลผล ณ ' . date('Y-m-d H:i:s'),
-    ],
-    'responsive' => true,
-    'hover'      => true,
-    'exportConfig' => [
-        GridView::CSV   => ['label' => 'Export CSV',   'filename' => 'deptor_' . date('Y-m-d')],
-        GridView::EXCEL => ['label' => 'Export Excel', 'filename' => 'deptor_' . date('Y-m-d')],
-        GridView::TEXT  => ['label' => 'Export Text',  'filename' => 'deptor_' . date('Y-m-d')],
-    ],
-    'toolbar' => [
-        ['content' =>
-            Html::a('<i class="glyphicon glyphicon-repeat"></i>', ['index'], [
-                'data-pjax' => 0,
-                'class'     => 'btn btn-default',
-                'title'     => 'รีเซ็ต',
-            ])
-        ],
-        '{toggleData}',
-        '{export}',
-    ],
-    'export' => [
-        'fontAwesome' => true,
-    ],
-    'pjax'         => true,
-    'pjaxSettings' => [
-        'neverTimeout' => true,
-    ],
-    'columns' => [
-        ['class' => 'kartik\grid\SerialColumn'],
-        [
-            'attribute' => 'hospcode',
-            'label'     => 'รหัสสถานพยาบาล',
-            'hAlign'    => 'center',
-        ],
-        [
-            'attribute' => 'hosname',
-            'label'     => 'ชื่อสถานพยาบาล',
-        ],
-        [
-            'attribute' => 'total_visit',
-            'label'     => 'จำนวนครั้ง',
-            'hAlign'    => 'right',
-            'format'    => ['decimal', 0],
-        ],
-        [
-            'attribute' => 'claim',
-            'label'     => 'ยอดเบิก (บาท)',
-            'hAlign'    => 'right',
-            'format'    => ['decimal', 2],
-        ],
-        [
-            'attribute' => 'alltotal',
-            'label'     => 'ยอดรวม (บาท)',
-            'hAlign'    => 'right',
-            'format'    => ['decimal', 2],
-        ],
-    ],
-]);
-?>
+        <?= $this->render("_table", ["type" => "op", "provider" => $dataProvider]) ?>
+        <?= $this->render("_table", ["type" => "pp", "provider" => $dataProvider2]) ?>
+        <?= $this->render("_table", ["type" => "ip", "provider" => $dataProvider3]) ?>
+    </div>
 </div>
-<div class="col-md-6">
-<?php
-    echo GridView::widget([
-        'dataProvider' => $dataProvider2,
-        'formatter' => [
-            'class'       => 'yii\i18n\Formatter',
-            'nullDisplay' => '-',
-        ],
-        'panel' => [
-            'heading' => '<i class="fa fa-table"></i> ข้อมูลลูกหนี้ตามจ่าย (PP)',
-            'after'   => 'ประมวลผล ณ ' . date('Y-m-d H:i:s'),
-        ],
-        'responsive' => true,
-        'hover'      => true,
-        'exportConfig' => [
-            GridView::CSV   => ['label' => 'Export CSV',   'filename' => 'deptor_summary_' . date('Y-m-d')],
-            GridView::EXCEL => ['label' => 'Export Excel', 'filename' => 'deptor_summary_' . date('Y-m-d')],
-            GridView::TEXT  => ['label' => 'Export Text',  'filename' => 'deptor_summary_' . date('Y-m-d')],
-        ],
-        'toolbar' => [
-            ['content' =>
-                Html::a('<i class="glyphicon glyphicon-repeat"></i>', ['index'], [
-                    'data-pjax' => 0,
-                    'class'     => 'btn btn-default',
-                    'title'     => 'รีเซ็ต',
-                ])
-            ],
-            '{toggleData}',
-            '{export}',
-        ],
-        'export' => [
-            'fontAwesome' => true,
-        ],
-        'pjax'         => true,
-        'pjaxSettings' => [
-            'neverTimeout' => true,
-        ],
-        'columns' => [
-        ['class' => 'kartik\grid\SerialColumn'],
-        [
-            'attribute' => 'hospcode',
-            'label'     => 'รหัสสถานพยาบาล',
-            'hAlign'    => 'center',
-        ],
-        [
-            'attribute' => 'hosname',
-            'label'     => 'ชื่อสถานพยาบาล',
-        ],
-        [
-            'attribute' => 'total_visit',
-            'label'     => 'จำนวนครั้ง',
-            'hAlign'    => 'right',
-            'format'    => ['decimal', 0],
-        ],
-        [
-            'attribute' => 'claim',
-            'label'     => 'ยอดเบิก (บาท)',
-            'hAlign'    => 'right',
-            'format'    => ['decimal', 2],
-        ],
-        [
-            'attribute' => 'alltotal',
-            'label'     => 'ยอดรวม (บาท)',
-            'hAlign'    => 'right',
-            'format'    => ['decimal', 2],
-        ],
-        ],
-    ]);
-?>
-</div>
-        </div>
-        <div class="row" style="margin-top:14px;">
-            <div class="col-md-12">
-<?php
-    echo GridView::widget([
-        'dataProvider' => $dataProvider3,
-        'formatter' => [
-            'class'       => 'yii\i18n\Formatter',
-            'nullDisplay' => '-',
-        ],
-        'panel' => [
-            'heading' => '<i class="fa fa-table"></i> ข้อมูลลูกหนี้ตามจ่าย (IP)',
-            'after'   => 'ประมวลผล ณ ' . date('Y-m-d H:i:s'),
-        ],
-        'responsive' => true,
-        'hover'      => true,
-        'exportConfig' => [
-            GridView::CSV   => ['label' => 'Export CSV',   'filename' => 'deptor_summary_' . date('Y-m-d')],
-            GridView::EXCEL => ['label' => 'Export Excel', 'filename' => 'deptor_summary_' . date('Y-m-d')],
-            GridView::TEXT  => ['label' => 'Export Text',  'filename' => 'deptor_summary_' . date('Y-m-d')],
-        ],
-        'toolbar' => [
-            ['content' =>
-                Html::a('<i class="glyphicon glyphicon-repeat"></i>', ['index'], [
-                    'data-pjax' => 0,
-                    'class'     => 'btn btn-default',
-                    'title'     => 'รีเซ็ต',
-                ])
-            ],
-            '{toggleData}',
-            '{export}',
-        ],
-        'export' => [
-            'fontAwesome' => true,
-        ],
-        'pjax'         => true,
-        'pjaxSettings' => [
-            'neverTimeout' => true,
-        ],
-        'columns' => [
-        ['class' => 'kartik\grid\SerialColumn'],
-        [
-            'attribute' => 'hospcode',
-            'label'     => 'รหัสสถานพยาบาล',
-            'hAlign'    => 'center',
-        ],
-        [
-            'attribute' => 'hosname',
-            'label'     => 'ชื่อสถานพยาบาล',
-        ],
-        [
-            'attribute' => 'total_visit',
-            'label'     => 'จำนวนครั้ง',
-            'hAlign'    => 'right',
-            'format'    => ['decimal', 0],
-        ],
-        [
-            'attribute' => 'claim',
-            'label'     => 'ยอดเบิก (บาท)',
-            'hAlign'    => 'right',
-            'format'    => ['decimal', 2],
-        ],
-        [
-            'attribute' => 'alltotal',
-            'label'     => 'ยอดรวม (บาท)',
-            'hAlign'    => 'right',
-            'format'    => ['decimal', 2],
-        ],
-        ],
-    ]);
-?>
-            </div>
-        </div>
-    </div> <!-- /.col-md-12 gridview -->
-</div> <!-- /.deptor-index -->

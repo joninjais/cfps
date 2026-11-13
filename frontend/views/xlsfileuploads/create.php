@@ -31,9 +31,9 @@ $this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['dmstr\web\
             </ol>
             <p>
                 ดาวน์โหลดไฟล์ตัวอย่าง:
-                <?= Html::a('OP / PP', '@web/EX-op-pp.xlsx', ['download' => 'EX-op-pp.xlsx']) ?>
+                <?= Html::a('OP / PP.xlsx', '@web/EX-op-pp.xlsx', ['download' => 'EX-op-pp.xlsx']) ?>
                 และ
-                <?= Html::a('IP', '@web/EX-ip.xlsx', ['download' => 'EX-ip.xlsx']) ?>
+                <?= Html::a('IP.xlsx', '@web/EX-ip.xlsx', ['download' => 'EX-ip.xlsx']) ?>
             </p>
             <div>
                 <strong>หัวตาราง OP / PP</strong>
