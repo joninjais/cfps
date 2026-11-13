@@ -67,14 +67,22 @@ class BaseController extends \yii\web\Controller
         ));
     }
 
-    /** subquery รหัสเฉพาะ รพ. (hospcode = cupcode) ภายในขอบเขตที่อนุญาต ไม่รวม รพ.สต. */
+    /** subquery รหัส รพ. (hospcode = cupcode) ภายในขอบเขตที่อนุญาต ไม่รวม รพ.สต. ลูกข่าย แต่รวมหน่วยบริการของบัญชีเอง */
     protected function hospitalFacilityCodesSql(): string
     {
         $facilityCodesSql = $this->facilityCodesSql();
+        $ownCondition = '';
+        if (!$this->isProvincialAdmin()) {
+            $identity = Yii::$app->user->identity;
+            $ownCode = trim((string)($identity->hoscode ?? Yii::$app->session->get('hoscode')));
+            if ($ownCode !== '') {
+                $ownCondition = ' OR chospital2.hospcode = ' . Yii::$app->db->quoteValue($ownCode);
+            }
+        }
 
         return "SELECT DISTINCT chospital2.hospcode FROM chospital2
             WHERE chospital2.hospcode IN ($facilityCodesSql)
-            AND chospital2.hospcode = chospital2.cupcode";
+            AND (chospital2.hospcode = chospital2.cupcode$ownCondition)";
     }
 
     /**

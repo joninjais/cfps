@@ -37,7 +37,7 @@ class SqlcodeController extends BaseController
      */
     private function isAdmin(): bool
     {
-        return Yii::$app->facilityAccess->isProvincialAdmin();
+        return Yii::$app->user->can('provincialAdmin');
     }
 
     /**

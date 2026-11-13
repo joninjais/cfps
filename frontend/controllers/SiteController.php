@@ -118,12 +118,7 @@ class SiteController extends BaseController
         $session = Yii::$app->session;
         $hoscode=$session['hoscode'];
         $facilityCodesSql = $this->facilityCodesSql();
-        $hospitalFacilityCodesSql = "
-            SELECT DISTINCT chospital2.hospcode
-            FROM chospital2
-            WHERE chospital2.hospcode IN ($facilityCodesSql)
-              AND chospital2.hospcode = chospital2.cupcode
-        ";
+        $hospitalFacilityCodesSql = $this->hospitalFacilityCodesSql();
 
         
         $datenow=date('Y-m-d');
@@ -2401,12 +2396,7 @@ ORDER BY q.cupcode, q.hospcode
         $session = Yii::$app->session;
         $hoscode = $session['hoscode'];
         $facilityCodesSql = $this->facilityCodesSql();
-        $hospitalFacilityCodesSql = "
-            SELECT DISTINCT chospital2.hospcode
-            FROM chospital2
-            WHERE chospital2.hospcode IN ($facilityCodesSql)
-              AND chospital2.hospcode = chospital2.cupcode
-        ";
+        $hospitalFacilityCodesSql = $this->hospitalFacilityCodesSql();
 
         $icd10Codes = ['Z34','Z13','Z35','Z30','Z31','Z32','Z33','Z39',
                        'Z364','Z37','Z21','Z23.2','Z240','Z244','Z245',

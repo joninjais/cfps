@@ -194,7 +194,8 @@ class UserController extends BaseController
         $originalRequestedRole = $model->requested_role;
         $isProtectedAdminAccount = $isProvincialAdminAccount && $originalHoscode === '00064';
         $isSelf = (string)$model->userid === (string)Yii::$app->user->id;
-        $canChangeFacilityCode = $this->isDesignatedAdmin() || ($isUserManagerAccount && $isSelf);
+        $isActorUserManager = Yii::$app->facilityAccess->isUserManager();
+        $canChangeFacilityCode = $this->isDesignatedAdmin() || $isActorUserManager;
         if (!$isAdminAccount) {
             $model->requested_role = Yii::$app->facilityAccess->expectedStaffRole($originalHoscode) ?? '';
         }
@@ -233,7 +234,9 @@ class UserController extends BaseController
             }
             $expectedRole = Yii::$app->facilityAccess->expectedStaffRole((string)$model->hoscode);
             if (!$isAdminAccount) {
-                if ($expectedRole === null || $expectedRole === 'provincialAdmin') {
+                if ($expectedRole === 'provincialAdmin' && $isActorUserManager) {
+                    $model->requested_role = $originalRequestedRole;
+                } elseif ($expectedRole === null || $expectedRole === 'provincialAdmin') {
                     $model->addError('requested_role', 'ไม่สามารถระบุประเภทผู้ใช้งานจากรหัสสถานพยาบาลได้');
                     $isValid = false;
                 } else {
@@ -261,7 +264,8 @@ class UserController extends BaseController
                     if (!$model->save(false)) {
                         throw new \RuntimeException('ไม่สามารถบันทึกบัญชีผู้ใช้ได้');
                     }
-                    if ($model->approval_status === User::APPROVAL_APPROVED && !$isAdminAccount) {
+                    if ($model->approval_status === User::APPROVAL_APPROVED && !$isAdminAccount
+                        && Yii::$app->facilityAccess->expectedStaffRole((string)$model->hoscode) !== 'provincialAdmin') {
                         $this->assignFacilityRole($model);
                     }
                     $transaction->commit();
@@ -479,8 +483,7 @@ class UserController extends BaseController
         }
 
         $auth = Yii::$app->authManager;
-        if ((string)$model->hoscode === '00064'
-            || $auth->getAssignment('provincialAdmin', (string)$model->userid) !== null
+        if ($auth->getAssignment('provincialAdmin', (string)$model->userid) !== null
             || $auth->getAssignment('userManager', (string)$model->userid) !== null) {
             throw new ForbiddenHttpException('ไม่มีสิทธิ์จัดการบัญชีผู้ดูแลระบบอื่น');
         }

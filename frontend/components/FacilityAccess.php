@@ -21,7 +21,14 @@ class FacilityAccess extends \yii\base\Component
 
     public function isProvincialAdmin(): bool
     {
-        return Yii::$app->user->can('provincialAdmin');
+        if (Yii::$app->user->can('provincialAdmin')) {
+            return true;
+        }
+
+        // userManager ที่สังกัดรหัส 00064 เห็นข้อมูลระดับจังหวัดเท่า สสจ.
+        $identity = Yii::$app->user->identity;
+        return Yii::$app->user->can('userManager')
+            && trim((string)($identity->hoscode ?? '')) === '00064';
     }
 
     public function isUserManager(): bool
@@ -147,6 +154,9 @@ class FacilityAccess extends \yii\base\Component
         $identity = Yii::$app->user->identity;
         if ($this->isUserManager()) {
             $this->userManagementFacilityCodes();
+            if (trim((string)($identity->hoscode ?? '')) === '00064') {
+                return;
+            }
         }
 
         $expectedRole = $this->expectedStaffRole((string)($identity->hoscode ?? ''));

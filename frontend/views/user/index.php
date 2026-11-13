@@ -50,9 +50,8 @@ $this->title = 'จัดการผู้ใช้งาน';
                 'buttons'  => [
                     'update' => function ($url, $model) use ($canManageAdminRoles, $adminUserIds) {
                         if (!$canManageAdminRoles
-                            && ((string)$model->hoscode === '00064'
-                                || (in_array((int)$model->userid, $adminUserIds, true)
-                                    && (string)$model->userid !== (string)Yii::$app->user->id))) {
+                            && in_array((int)$model->userid, $adminUserIds, true)
+                            && (string)$model->userid !== (string)Yii::$app->user->id) {
                             return '';
                         }
                         return Html::a('<span class="fa fa-pencil fa-2x"></span>', ['update', 'id' => $model->userid], ['title' => 'แก้ไข']);
@@ -65,9 +64,8 @@ $this->title = 'จัดการผู้ใช้งาน';
                 'buttons'  => [
                     'reset' => function ($url, $model) use ($canManageAdminRoles, $adminUserIds) {
                         if (!$canManageAdminRoles
-                            && ((string)$model->hoscode === '00064'
-                                || (in_array((int)$model->userid, $adminUserIds, true)
-                                    && (string)$model->userid !== (string)Yii::$app->user->id))) {
+                            && in_array((int)$model->userid, $adminUserIds, true)
+                            && (string)$model->userid !== (string)Yii::$app->user->id) {
                             return '';
                         }
                         // เปลี่ยน icon เป็นรูปกุญแจสำหรับเปลี่ยนรหัสผ่านผู้ใช้
