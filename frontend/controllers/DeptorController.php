@@ -91,123 +91,81 @@ class DeptorController extends BaseController
 
             // ── op aggregate queries ──────────────────────────────
             $sqlop = "
-                SELECT 
-                    q.hospcode,
-                    q.hosname,
-                    COUNT(DISTINCT q.sq) AS total_visit,
-                    SUM(CAST(q.alltotal AS DECIMAL(20,2))) AS alltotal,
-                    SUM(CAST(q.claim AS DECIMAL(20,2))) AS claim
-                FROM (
-                    SELECT 
-                        opdata.hospcode,
-                        chospital2.hosname,
-                        opdata.dateserv,
-                        opdata.hn,
-                        opdata.seq AS sq,
-                        opdata.cid,
-                        opdata.`name`,
-                        opdata.icd10,
-                        opdata.alltotal,
-                        CASE 
-                            WHEN CAST(opdata.alltotal AS DECIMAL(20,2)) >= 700 THEN 700
-                            WHEN CAST(opdata.alltotal AS DECIMAL(20,2)) < 700 THEN opdata.alltotal
-                            ELSE NULL 
-                        END AS claim,
-                        opdata.FundHolderID AS fundHos
-                    FROM opdata
-                    LEFT JOIN chospital2 ON opdata.hospcode = chospital2.hospcode
-                    WHERE opdata.FundHolderID IN ($facilityCodesSql)
-                    AND opdata.FundHolderID <> 'ccccc'
-                        AND opdata.dateserv BETWEEN ':startDate' and ':endDate'
-                        AND opdata.seq NOT IN (
-                          SELECT DISTINCT opdata.seq
-                          FROM opdata
-                          WHERE opdata.dateserv BETWEEN ':startDate' and ':endDate'
-                          AND opdata.icd10 REGEXP '(^|,|\\{|\\})('
-                              'Z34|Z13|Z35|Z30|Z31|Z32|Z33|Z39|Z364|Z37|Z21|Z232|Z240|Z244|Z245|Z271|Z246|Z251|Z274|Z273|Z11|Z10|Z298|Z001|Z115|U119'
-                          ')($|,|\\}|\\{)'
-                    )
-                ) AS q
-                GROUP BY q.hospcode, q.hosname;
+            SELECT
+                opdata.hospcode,
+                chospital2.hosname,
+                COUNT(DISTINCT CONCAT_WS('-', opdata.hospcode, opdata.seq)) AS total_visit,
+                ROUND(sum(case when(CAST(opdata.alltotal as DECIMAL(20,2)) = 700 or CAST(opdata.alltotal as DECIMAL(20,2)) > 700) then 700
+                when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end),2) as claim,
+                ROUND(SUM(opdata.alltotal), 2) AS alltotal
+            FROM
+                opdata
+                inner join chospital2
+                    on opdata.hospcode = chospital2.hospcode
+                    and chospital2.provcode = '82'
+            WHERE
+                opdata.op_pp_type = 'op'
+                -- and opdata.FundHolderID = '11354'
+                and opdata.FundHolderID = '$hoscode'
+                and opdata.FundHolderID != 'ccccc'
+                -- and opdata.dateserv BETWEEN '2025-10-01' AND '2026-09-30'
+                and opdata.dateserv BETWEEN ':startDate' and ':endDate'
+            GROUP BY
+                opdata.hospcode,
+                chospital2.hosname
+            ORDER BY
+                opdata.hospcode DESC
             ";
 
             $sqlpp = "
-                SELECT 
-                    q.hospcode,
-                    q.hosname,
-                    COUNT(DISTINCT q.sq) AS total_visit,
-                    SUM(CAST(q.claim AS DECIMAL(20,2))) AS claim,                    
-                    SUM(CAST(q.alltotal AS DECIMAL(20,2))) AS alltotal
-                FROM (
-                    SELECT 
-                        opdata.hospcode,
-                        chospital2.hosname,
-                        opdata.dateserv,
-                        opdata.hn,
-                        opdata.seq AS sq,
-                        opdata.cid,
-                        opdata.`name`,
-                        opdata.icd10,
-                        opdata.alltotal,
-                        CASE 
-                            WHEN CAST(opdata.alltotal AS DECIMAL(20,2)) >= 700 THEN 700
-                            WHEN CAST(opdata.alltotal AS DECIMAL(20,2)) < 700 THEN opdata.alltotal
-                            ELSE NULL 
-                        END AS claim,
-                        opdata.FundHolderID AS fundHos
-                    FROM opdata
-                    inner JOIN chospital2 ON opdata.hospcode = chospital2.hospcode
-                    WHERE opdata.FundHolderID IN ($facilityCodesSql)
-                    AND opdata.hospcode != '$hoscode'
-                    AND opdata.FundHolderID <> 'ccccc'
-                    AND opdata.dateserv BETWEEN ':startDate' and ':endDate'
-                    AND opdata.seq IN (
-                      SELECT DISTINCT opdata.seq
-                      FROM opdata
-                      WHERE opdata.dateserv BETWEEN ':startDate' and ':endDate'
-                      AND opdata.icd10 REGEXP '(^|,|\\{|\\})('
-                          'Z34|Z13|Z35|Z30|Z31|Z32|Z33|Z39|Z364|Z37|Z21|Z232|Z240|Z244|Z245|Z271|Z246|Z251|Z274|Z273|Z11|Z10|Z298|Z001|Z115|U119'
-                      ')($|,|\\}|\\{)'
-                    )
-                ) AS q
-                GROUP BY q.hospcode, q.hosname;
+            SELECT
+                opdata.hospcode,
+                chospital2.hosname,
+                COUNT(DISTINCT CONCAT_WS('-', opdata.hospcode, opdata.seq)) AS total_visit,
+                ROUND(sum(case when(CAST(opdata.alltotal as DECIMAL(20,2)) = 700 or CAST(opdata.alltotal as DECIMAL(20,2)) > 700) then 700
+                when(CAST(opdata.alltotal as DECIMAL(20,2)) < 700) then opdata.alltotal else NULL end),2) as claim,
+                ROUND(SUM(opdata.alltotal), 2) AS alltotal
+            FROM
+                opdata
+                inner join chospital2
+                    on opdata.hospcode = chospital2.hospcode
+                    and chospital2.provcode = '82'
+            WHERE
+                opdata.op_pp_type = 'pp'
+                -- and opdata.FundHolderID = '11354'
+                and opdata.FundHolderID = '$hoscode'
+                and opdata.FundHolderID != 'ccccc'
+                -- and opdata.dateserv BETWEEN '2025-10-01' AND '2026-09-30'
+                and opdata.dateserv BETWEEN ':startDate' and ':endDate'
+            GROUP BY
+                opdata.hospcode,
+                chospital2.hosname
+            ORDER BY
+                opdata.hospcode DESC
             ";
             
             $sqlip = "
             SELECT
-            q.hospcode,
-            q.hosname,
-            count(q.an) as total_visit,
-            sum(q.cost) as claim,
-            sum(q.costadjrw) as alltotal
-            FROM(
-            SELECT
-            ipdata.hospcode,
-            chospital2.hosname,
-            ipdata.admitdate,
-            ipdata.dischartdate,
-            ipdata.`name`,
-            ipdata.fund,
-            ipdata.cid,
-            ipdata.hn,
-            ipdata.an,
-            ipdata.icd10,
-            ipdata.icd9,
-            cast(ipdata.los as int) los,
-            ipdata.cost cost,
-            ipdata.adjrw,
-            TRUNCATE(ipdata.adjrw*8600,2) as costadjrw,
-            ipdata.FundHolderID
-            FROM
-            ipdata
-            left join chospital2 on ipdata.hospcode=chospital2.hospcode
+                q1.hospcode,
+                chospital2.hosname,
+                COUNT(DISTINCT CONCAT_WS('-', q1.hospcode, q1.an)) AS total_visit,
+                ROUND(SUM(q1.costadjrw), 2) AS claim,
+                ROUND(SUM(q1.cost), 2) AS alltotal
+            FROM ipdata AS q1
+            INNER JOIN chospital2
+                ON q1.hospcode = chospital2.hospcode
+                AND chospital2.provcode = '82'
             WHERE
-            ipdata.FundHolderID IN ($facilityCodesSql)
-            and ipdata.hospcode != '$hoscode'
-            and ipdata.FundHolderID<>'ccccc'
-            and ipdata.dischartdate between ':startDate' and ':endDate'
-            ) as q
-            group by q.hospcode            
+            --   q1.FundHolderID = '11354'
+            q1.FundHolderID = '$hoscode'
+            AND q1.FundHolderID != 'ccccc'
+            --   AND q1.dischartdate BETWEEN '2025-10-01' AND '2026-09-30'
+            AND q1.dischartdate BETWEEN ':startDate' and ':endDate'
+            GROUP BY
+                q1.hospcode,
+                chospital2.hosname
+            ORDER BY
+                q1.hospcode ASC            
             ";
 
             // แทนค่าวันที่ใน SQL
