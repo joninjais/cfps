@@ -81,6 +81,23 @@ $this->title = 'จัดการผู้ใช้งาน';
                 'filter' => yii\helpers\Html::activeTextInput(new \frontend\models\UserSearch(), 'fname', ['class' => 'form-control', 'placeholder' => 'ชื่อ']),
             ],
             [
+                'label' => 'จัดการคำขอ',
+                'format' => 'raw',
+                'value' => function ($model) {
+                    if ($model->approval_status !== \frontend\models\User::APPROVAL_PENDING) {
+                        return '';
+                    }
+
+                    return Html::a('อนุมัติ', ['approve', 'id' => $model->userid], [
+                        'class' => 'btn btn-xs btn-success',
+                        'data' => ['method' => 'post', 'confirm' => 'อนุมัติบัญชีนี้หรือไม่?'],
+                    ]) . ' ' . Html::a('ปฏิเสธ', ['reject', 'id' => $model->userid], [
+                        'class' => 'btn btn-xs btn-danger',
+                        'data' => ['method' => 'post', 'confirm' => 'ปฏิเสธคำขอบัญชีนี้หรือไม่?'],
+                    ]);
+                },
+            ],            
+            [
                 'attribute' => 'hoscode',
                 'label' => 'รหัสสถานพยาบาล',
                 'filter' => Html::activeTextInput($searchModel, 'hoscode', [
@@ -148,23 +165,7 @@ $this->title = 'จัดการผู้ใช้งาน';
                     ][$model->approval_status] ?? $model->approval_status;
                 },
             ],
-            [
-                'label' => 'จัดการคำขอ',
-                'format' => 'raw',
-                'value' => function ($model) {
-                    if ($model->approval_status !== \frontend\models\User::APPROVAL_PENDING) {
-                        return '';
-                    }
 
-                    return Html::a('อนุมัติ', ['approve', 'id' => $model->userid], [
-                        'class' => 'btn btn-xs btn-success',
-                        'data' => ['method' => 'post', 'confirm' => 'อนุมัติบัญชีนี้หรือไม่?'],
-                    ]) . ' ' . Html::a('ปฏิเสธ', ['reject', 'id' => $model->userid], [
-                        'class' => 'btn btn-xs btn-danger',
-                        'data' => ['method' => 'post', 'confirm' => 'ปฏิเสธคำขอบัญชีนี้หรือไม่?'],
-                    ]);
-                },
-            ],
 
                         [
                 'class'    => 'yii\grid\ActionColumn',
