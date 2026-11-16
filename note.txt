@@ -186,6 +186,10 @@ F048827653015
 การบริหารจัดการกองทุน
 
 
+username ใช้ตัวอักษรภาษาอังกฤษ ตัวเลข
+fname กับ lname ใช้ภาษาไทยเท่านั้น
+
+
 CREATE TABLE `refer_claim` (
   `rcid`             int(11) NOT NULL AUTO_INCREMENT,
   -- ===== ส่วนหัวเอกสาร =====

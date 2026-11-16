@@ -30,6 +30,7 @@ class SignupForm extends Model
             ['username', 'required'],
             ['username', 'unique', 'targetClass' => User::class, 'targetAttribute' => 'user', 'message' => 'ชื่อผู้ใช้นี้ถูกใช้แล้ว'],
             ['username', 'string', 'min' => 2, 'max' => 50],
+            ['username', 'match', 'pattern' => '/^[A-Za-z0-9]+$/', 'message' => 'ชื่อผู้ใช้ใช้ได้เฉพาะตัวอักษรภาษาอังกฤษและตัวเลข'],
 
             ['email', 'trim'],
             ['email', 'required'],
@@ -47,6 +48,7 @@ class SignupForm extends Model
             [['fname', 'lname'], 'trim'],
             [['fname', 'lname', 'hoscode', 'requestedRole'], 'required'],
             [['fname', 'lname'], 'string', 'max' => 100],
+            [['fname', 'lname'], 'match', 'pattern' => '/^[\x{0E01}-\x{0E3A}\x{0E40}-\x{0E4E}]+$/u', 'message' => '{attribute}ต้องเป็นตัวอักษรภาษาไทยเท่านั้น'],
             ['hoscode', 'match', 'pattern' => '/^\d{5}$/D', 'message' => 'รหัสหน่วยบริการต้องเป็นตัวเลข 5 หลัก'],
             ['requestedRole', 'in', 'range' => ['hospitalStaff', 'pcuStaff']],
             ['hoscode', 'validateFacility'],
