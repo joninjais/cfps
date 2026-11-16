@@ -1,0 +1,438 @@
+/* ==========================================================================
+   CFPS Collapsible & Auto-Hide Header + Mobile UX/UI
+   Covers Portrait & Landscape Phones (up to 1024px wide or 540px tall)
+   ========================================================================== */
+
+/* ── 1. กรอบเลื่อนตารางมาตรฐาน ────────────────────────────────────────────── */
+.cfps-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 12px;
+    border: 1px solid #dde3ef;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.cfps-table-scroll > .table {
+    margin-bottom: 0 !important;
+    border: none !important;
+}
+
+/* ซ่อนแถบปุ่มมือถือเมื่อเปิดบนหน้าจอคอมพิวเตอร์ปกติ */
+.cfps-mobile-header-bar,
+.cfps-header-restore-btn,
+.cfps-mobile-table-bar {
+    display: none;
+}
+
+/* ── 2. โหมดมือถือแนวตั้ง แนวนอน (เช่น 852x393) และแท็บเล็ต ────────────────── */
+@media screen and (max-width: 1024px), screen and (max-height: 540px) {
+
+    /* Pure-CSS Safety: หาก JS ยังโหลดไม่เสร็จ ห้ามให้ sticky header บังหน้าจอเด็ดขาด */
+    body:not(.cfps-collapsible-ready) .cfps-sticky-top {
+        position: static !important;
+    }
+
+    /* เมื่อ JS พร้อมทำงาน ให้แถบควบคุมย่อเกาะขอบบนและเลื่อนซ่อนได้อย่างนุ่มนวล */
+    body.cfps-collapsible-ready .cfps-sticky-top {
+        position: sticky !important;
+        top: 0;
+        z-index: 1100;
+        transition: transform 0.2s ease;
+    }
+
+    /* 2.1 แถบควบคุมหลักแบบย่อ (Compact Header Bar สูงเพียง 40-44px) */
+    .cfps-mobile-header-bar {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 44px;
+        padding: 4px 10px;
+        background: linear-gradient(90deg, #1a237e 0%, #283593 60%, #1565c0 100%);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+        position: relative;
+        z-index: 1110;
+    }
+
+    /* บนหน้าจอแนวนอนความสูงน้อย (เช่น iPhone 16 แนวนอน 852x393) บีบให้บางเพียง 38px */
+    @media screen and (max-height: 500px) {
+        .cfps-mobile-header-bar {
+            min-height: 38px;
+            padding: 3px 10px;
+        }
+    }
+
+    .cfps-mobile-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex: 1 1 auto;
+        color: #ffffff !important;
+        text-decoration: none !important;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .cfps-mobile-brand img {
+        width: 26px;
+        height: 26px;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+
+    .cfps-mobile-brand-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cfps-mobile-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+
+    .cfps-hdr-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        height: 31px;
+        padding: 0 9px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        background: rgba(255, 255, 255, 0.14);
+        color: #ffffff;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background-color 0.15s ease;
+    }
+
+    .cfps-hdr-btn:hover,
+    .cfps-hdr-btn:focus {
+        background: rgba(255, 255, 255, 0.24);
+        color: #ffffff;
+        outline: none;
+    }
+
+    .cfps-hdr-btn.is-active {
+        background: #ffffff;
+        border-color: #ffffff;
+        color: #1a237e;
+    }
+
+    .cfps-hdr-btn--hide {
+        padding: 0 8px;
+        background: rgba(0, 0, 0, 0.22);
+    }
+
+    /* 2.2 ซ่อน .main-header และ .cfps-topmenu 100% เป็นค่าเริ่มต้น */
+    body.cfps-collapsible-ready .main-header {
+        display: none !important;
+    }
+
+    body.cfps-collapsible-ready .main-header.is-mobile-expanded {
+        display: block !important;
+        background: linear-gradient(180deg, #212c8f 0%, #1a237e 100%) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.28);
+        max-height: calc(100vh - 44px);
+        overflow-y: auto;
+    }
+
+    body.cfps-collapsible-ready .main-header .cfps-original-brand,
+    body.cfps-collapsible-ready .main-header .cfps-original-brand-wrap {
+        display: none !important;
+    }
+
+    body.cfps-collapsible-ready .main-header .navbar {
+        min-height: 0 !important;
+        padding: 8px 10px 10px !important;
+        background: transparent !important;
+    }
+
+    body.cfps-collapsible-ready .main-header .navbar-custom-menu,
+    body.cfps-collapsible-ready .main-header .navbar-collapse,
+    body.cfps-collapsible-ready .main-header .navbar-right {
+        width: 100% !important;
+        float: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+
+    /* บนจอแนวนอน (>=600px) จัดเรียงปุ่มผู้ใช้เป็น 3 คอลัมน์ ใช้พื้นที่แค่ 2 แถวสั้นๆ */
+    body.cfps-collapsible-ready .main-header .navbar-nav {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        float: none !important;
+    }
+
+    @media screen and (max-width: 599px) {
+        body.cfps-collapsible-ready .main-header .navbar-nav {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        body.cfps-collapsible-ready .main-header .navbar-nav > li:first-child {
+            grid-column: 1 / -1;
+        }
+    }
+
+    body.cfps-collapsible-ready .main-header .navbar-nav > li {
+        float: none !important;
+        margin: 0 !important;
+    }
+
+    body.cfps-collapsible-ready .main-header .navbar-nav > li > a,
+    body.cfps-collapsible-ready .main-header .navbar-nav > li > span,
+    body.cfps-collapsible-ready .main-header .navbar-nav > li > form > button {
+        display: flex !important;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        padding: 7px 10px !important;
+        font-size: 0.84rem !important;
+        border-radius: 7px !important;
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* 2.3 พับซ่อน .cfps-topmenu เป็นค่าเริ่มต้น และจัดเป็น Grid เมื่อกดกาง */
+    body.cfps-collapsible-ready .cfps-topmenu {
+        display: none !important;
+    }
+
+    body.cfps-collapsible-ready .cfps-topmenu.is-mobile-expanded {
+        display: block !important;
+        background: #ffffff;
+        border-bottom: 2px solid #2e7d48;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+        max-height: calc(100vh - 44px);
+        overflow-y: auto;
+    }
+
+    body.cfps-collapsible-ready .cfps-topmenu .cfps-topmenu__inner {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: start;
+        gap: 6px;
+        padding: 8px 10px 10px !important;
+    }
+
+    @media screen and (max-width: 599px) {
+        body.cfps-collapsible-ready .cfps-topmenu .cfps-topmenu__inner {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-group {
+        width: 100%;
+    }
+
+    body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-toggle {
+        width: 100%;
+        justify-content: space-between;
+        padding: 8px 10px;
+        font-size: 0.86rem;
+        background: #f5faf6;
+        border: 1px solid #dcebe0;
+    }
+
+    body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-menu {
+        position: static !important;
+        float: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: 1px solid #d5e5d9;
+        margin: 4px 0;
+    }
+
+    /* 2.4 โหมดซ่อนหัวเว็บเต็มรูปแบบ (ทั้งตอนกดปุ่ม [▲] และตอนเลื่อนลงในแนวนอน) */
+    body.cfps-header-minimized .cfps-sticky-top,
+    body.cfps-header-minimized .cfps-mobile-header-bar,
+    body.cfps-header-minimized .main-header,
+    body.cfps-header-minimized .cfps-topmenu,
+    body.cfps-scroll-hidden .cfps-sticky-top {
+        display: none !important;
+    }
+
+    body.cfps-header-minimized .cfps-header-restore-btn,
+    body.cfps-scroll-hidden .cfps-header-restore-btn {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 6px;
+        position: fixed;
+        top: 6px;
+        right: 8px;
+        z-index: 1200;
+        padding: 5px 11px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: rgba(26, 35, 126, 0.88);
+        color: #ffffff;
+        font-size: 0.78rem;
+        font-weight: 700;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+        cursor: pointer;
+    }
+
+    /* 2.5 ลดระยะขอบเนื้อหาและปรับตาราง */
+    .content-wrapper > .content,
+    .content {
+        padding: 8px 8px 18px !important;
+    }
+
+    section.content-header,
+    .content-header {
+        padding: 6px 10px 4px !important;
+    }
+
+    .box {
+        margin-bottom: 10px !important;
+        border-radius: 8px !important;
+    }
+
+    .box-header {
+        padding: 8px 12px !important;
+    }
+
+    .box-header .box-title {
+        font-size: 0.94rem !important;
+        padding-right: 26px;
+    }
+
+    .box-body {
+        padding: 8px 10px !important;
+    }
+
+    .table > thead > tr > th,
+    .table > tbody > tr > td,
+    .table > tfoot > tr > th,
+    .table > tfoot > tr > td {
+        font-size: 0.85rem !important;
+        padding: 6px 8px !important;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* ตรึงคอลัมน์ซ้ายสุดของตาราง */
+    .cfps-table-scroll > .table > thead > tr > th:first-child,
+    .cfps-table-scroll > .table > tbody > tr > td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background-color: #ffffff;
+        box-shadow: 2px 0 5px rgba(15, 23, 42, 0.06);
+    }
+
+    .cfps-table-scroll > .table > thead > tr > th:first-child {
+        background-color: #eef2f7;
+        z-index: 3;
+    }
+
+    .cfps-table-scroll > .table.table-striped > tbody > tr:nth-of-type(odd) > td:first-child {
+        background-color: #f7f9fd;
+    }
+
+    /* แถบสลับมุมมองการ์ด / ตาราง */
+    .cfps-mobile-table-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 4px 0 6px;
+        padding: 2px 2px;
+    }
+
+    .cfps-scroll-hint {
+        font-size: 0.76rem;
+        color: #607d8b;
+    }
+
+    .cfps-view-toggle-btn {
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid #b0bec5;
+        background: #f8fafc;
+        color: #1a237e;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .cfps-view-toggle-btn.is-active {
+        background: #1a237e;
+        border-color: #1a237e;
+        color: #ffffff;
+    }
+
+    /* โหมดแสดงตารางเป็นการ์ด */
+    .cfps-table-scroll.is-card-view {
+        border: none;
+        background: transparent;
+        overflow-x: visible;
+    }
+
+    .cfps-table-scroll.is-card-view > .table,
+    .cfps-table-scroll.is-card-view > .table > tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .cfps-table-scroll.is-card-view > .table > thead {
+        display: none;
+    }
+
+    .cfps-table-scroll.is-card-view > .table > tbody > tr {
+        display: block;
+        background: #ffffff !important;
+        border: 1px solid #cfd8e3 !important;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        padding: 6px 10px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+    }
+
+    .cfps-table-scroll.is-card-view > .table > tbody > tr > td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        width: 100% !important;
+        position: static !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 1px dashed #e2e8f0 !important;
+        padding: 6px 4px !important;
+        text-align: right !important;
+        white-space: normal !important;
+        word-break: break-word;
+    }
+
+    .cfps-table-scroll.is-card-view > .table > tbody > tr > td:last-child {
+        border-bottom: none !important;
+    }
+
+    .cfps-table-scroll.is-card-view > .table > tbody > tr > td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #455a64;
+        text-align: left;
+        flex: 0 0 42%;
+        max-width: 45%;
+    }
+}
