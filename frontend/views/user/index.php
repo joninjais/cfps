@@ -1,7 +1,7 @@
 <?php
 use yii\helpers\Html;
 use kartik\grid\GridView;
-use app\assets\FontAwesomeAsset;
+use frontend\assets\FontAwesomeAsset;
 FontAwesomeAsset::register($this);
 /* @var $this yii\web\View */
 /* @var $searchModel frontend\models\UserSearch */

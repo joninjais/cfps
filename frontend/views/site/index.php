@@ -186,6 +186,10 @@ if(empty($hosb)){
 }
 
 /* ── Section boxes ─────────────────────────────────────────── */
+.cfps-dashboard .box { display: flow-root; }
+.cfps-dashboard .box-body::before,
+.cfps-dashboard .box-body::after { content: " "; display: table; }
+.cfps-dashboard .box-body::after { clear: both; }
 .box-main  .box-header { background: linear-gradient(135deg,#145a32,#27ae60) !important; border-bottom:0; }
 .box-op    .box-header { background: linear-gradient(135deg,#0d47a1,#1976d2) !important; border-bottom:0; }
 .box-pp    .box-header { background: linear-gradient(135deg,#4a235a,#7b1fa2) !important; border-bottom:0; }

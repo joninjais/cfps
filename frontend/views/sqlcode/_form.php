@@ -12,7 +12,7 @@ $hasCodeMirror = is_file($codeMirrorPath . '/codemirror.js')
     && is_file($codeMirrorPath . '/codemirror.css');
 $sqlCodeCssPath = Yii::getAlias('@webroot/css/sqlcode.css');
 $this->registerCssFile('@web/css/sqlcode.css?v=' . filemtime($sqlCodeCssPath), [
-    'depends' => ['dmstr\web\AdminLteAsset'],
+    'depends' => ['frontend\assets\CfpsThemeAsset'],
 ]);
 if ($hasCodeMirror) {
     CodeMirrorAsset::register($this);

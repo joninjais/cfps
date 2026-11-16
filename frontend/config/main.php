@@ -60,7 +60,8 @@ return [
         'view' => [
             'theme' => [
                 'pathMap' => [
-                    '@frontend/views' => '@frontend/themes/cfps'
+                    // '@frontend/views' => '@frontend/themes/cfps'
+                    '@app/views' => '@app/themes/cfps',
                 ],
             ],
        ],

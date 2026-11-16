@@ -6,7 +6,7 @@ use yii\helpers\Html;
 $this->title = 'อัปโหลดไฟล์ Excel';
 $this->params['breadcrumbs'][] = ['label' => 'รายการไฟล์นำเข้า', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
-$this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['dmstr\web\AdminLteAsset']]);
+$this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['frontend\assets\CfpsThemeAsset']]);
 ?>
 <div class="xls-import-page">
     <div class="xls-import-heading">

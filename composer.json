@@ -26,12 +26,10 @@
         "kartik-v/yii2-grid": "*",
         "kartik-v/yii2-widget-depdrop": "@dev",
         "kartik-v/yii2-widget-select2": "@dev",
-        "dmstr/yii2-adminlte-asset": "^2.1",
         "kartik-v/yii2-export": "*",
         "kartik-v/yii2-mpdf": "*",
 	"miloschuman/yii2-highcharts-widget": "^6.0",
 	"setasign/fpdi-tcpdf": "^2.0",
-	"yiister/yii2-gentelella": "~1.0",
         "karatae99/yii2-date-picker-thai-widget": "~1.0",
         "phpoffice/phpspreadsheet": "^1.29",
         "fortawesome/font-awesome": "^4.7"

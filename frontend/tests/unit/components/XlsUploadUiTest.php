@@ -69,7 +69,7 @@ class XlsUploadUiTest extends TestCase
         Yii::setAlias('@web', '');
         Yii::setAlias('@webroot', dirname(__DIR__, 3) . '/web');
         $this->app->assetManager->bundles = [
-            'dmstr\web\AdminLteAsset' => new \yii\web\AssetBundle(),
+            'frontend\assets\CfpsThemeAsset' => new \yii\web\AssetBundle(),
             'yii\widgets\ActiveFormAsset' => new \yii\web\AssetBundle(),
             'yii\grid\GridViewAsset' => new \yii\web\AssetBundle(),
             'yii\web\YiiAsset' => new \yii\web\AssetBundle(),

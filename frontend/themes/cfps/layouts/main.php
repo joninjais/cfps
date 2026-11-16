@@ -11,30 +11,30 @@ if (in_array(Yii::$app->controller->action->id, ['login', 'signup', 'change-pass
     if (class_exists('backend\assets\AppAsset')) {
         backend\assets\AppAsset::register($this);
     } else {
-        app\assets\AppAsset::register($this);
+        frontend\assets\AppAsset::register($this);
     }
 
-    dmstr\web\AdminLteAsset::register($this);
+    frontend\assets\CfpsThemeAsset::register($this);
 
     // Register custom CFPS theme CSS (overrides AdminLTE visuals)
     $this->registerCssFile('@web/css/cfps-theme.css', [
-        'depends' => ['dmstr\web\AdminLteAsset'],
+        'depends' => ['frontend\assets\CfpsThemeAsset'],
         'position' => \yii\web\View::POS_END,
     ]);
     // เพิ่ม Font Awesome 6
     $this->registerCssFile('@web/css/fontawesome-all.min.css', [
-        'depends' => ['dmstr\web\AdminLteAsset'],
+        'depends' => ['frontend\assets\CfpsThemeAsset'],
         'position' => \yii\web\View::POS_END,
     ]);
     $showTopMenu = !empty(Yii::$app->session['user']);
     if ($showTopMenu) {
         $topMenuCssPath = Yii::getAlias('@webroot/css/cfps-topmenu.css');
         $this->registerCssFile('@web/css/cfps-topmenu.css?v=' . filemtime($topMenuCssPath), [
-            'depends' => ['dmstr\web\AdminLteAsset'],
+            'depends' => ['frontend\assets\CfpsThemeAsset'],
             'position' => \yii\web\View::POS_END,
         ]);
     }
-    $directoryAsset = Yii::$app->assetManager->getPublishedUrl('@vendor/almasaeed2010/adminlte/dist');
+    $directoryAsset = Yii::$app->assetManager->getPublishedUrl('@web');
     ?>
     <?php $this->beginPage() ?>
     <!DOCTYPE html>

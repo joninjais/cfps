@@ -10,7 +10,7 @@ $types = require __DIR__ . '/_types.php';
 $this->title = 'ตรวจสอบและนำเข้าข้อมูล';
 $this->params['breadcrumbs'][] = ['label' => 'รายการไฟล์นำเข้า', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
-$this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['dmstr\web\AdminLteAsset']]);
+$this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['frontend\assets\CfpsThemeAsset']]);
 $imported = (int)$model->importstatus !== 0;
 $retired = $model->typefileupload === 'fwfhealth';
 ?>
