@@ -21,7 +21,7 @@ $sdate1 = ((int)$sy1-543).'-'.$sm1.'-'.$sd1;
 $ey2  = substr($date2,0,4);  $em2  = substr($date2,5,2);  $ed2  = substr($date2,8,2);
 $edate2 = ((int)$ey2-543).'-'.$em2.'-'.$ed2;
 
-$this->title = 'รายการลูกหนี้ตามจ่าย';
+$this->title = 'รายการลูกหนี้ตามจ่ายในจังหวัด';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <style>

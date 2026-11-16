@@ -45,7 +45,7 @@ $menus = [
                     ['label' => 'ตรวจสอบข้อมูล IP', 'desc' => 'ข้อมูลผู้ป่วยใน', 'icon' => 'fa-bed', 'url' => Url::to(['/ipdatainfo/index'])],
                     ['label' => 'ตรวจสอบข้อมูลกรมธรรม์', 'desc' => 'ข้อมูลประกันสุขภาพ', 'icon' => 'fa-file-text-o', 'url' => Url::to(['/insurancepolicies/index'])],
                     ['label' => 'รายงานสรุปการขายบัตรต่างด้าว', 'desc' => 'รายงานสรุปการขายบัตรต่างด้าว', 'icon' => 'fa-file-text-o', 'url' => Url::to(['/insurancepolicies/report'])],
-                ['label' => 'ลูกหนี้ตามจ่าย', 'desc' => 'ติดตามข้อมูลการเบิกจ่าย', 'icon' => 'fa-file-text-o', 'url' => Url::to(['/deptor/index'])],
+                ['label' => 'ลูกหนี้ตามจ่ายในจังหวัด', 'desc' => 'ติดตามข้อมูลการเบิกจ่าย', 'icon' => 'fa-file-text-o', 'url' => Url::to(['/deptor/index'])],
             ],
             [['label' => 'กองทุน Claim ตามปีงบประมาณ', 'desc' => 'ดูรายงานแยกตามปีงบประมาณ', 'icon' => 'fa-calendar-o', 'url' => Url::to(['/fwf-fy-claim/index'])]]
         ),
