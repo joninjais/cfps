@@ -1,0 +1,362 @@
+/* ==========================================================================
+   CFPS Custom User Table + Pure AJAX UI (No GridView / No Pjax)
+   ========================================================================== */
+
+.cfps-user-page-header {
+    margin-bottom: 12px;
+}
+
+.cfps-user-page-title {
+    margin: 0;
+    font-size: 1.35rem !important;
+    font-weight: 700;
+    color: #1a237e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cfps-user-main-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 14px;
+}
+
+/* กรอบการ์ดตารางหลัก */
+.cfps-user-card {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid #dce4ef;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(26, 35, 126, 0.08);
+    overflow: hidden;
+}
+
+.cfps-user-card.is-loading::after {
+    content: "กำลังโหลดข้อมูล...";
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 76px;
+    font-weight: 700;
+    color: #1a237e;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(1px);
+}
+
+.cfps-user-card__topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #f8fafd;
+    border-bottom: 1px solid #e3e9f2;
+}
+
+.cfps-user-summary {
+    font-size: 0.92rem;
+    color: #455a64;
+}
+
+.cfps-user-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* ตาราง HTML มาตรฐาน */
+.cfps-user-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.cfps-user-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.94rem;
+    min-width: 1060px;
+}
+
+.cfps-user-thead-titles th {
+    background: #f1f5fb;
+    color: #1e293b;
+    font-weight: 700;
+    padding: 11px 10px;
+    border-bottom: 2px solid #d5dfec;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.cfps-sort-link {
+    color: #1a237e;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cfps-sort-link:hover {
+    color: #1565c0;
+    text-decoration: underline;
+}
+
+.cfps-sort-indicator {
+    font-size: 0.8rem;
+    color: #00897b;
+}
+
+.cfps-user-thead-filters td {
+    background: #fafbfe;
+    padding: 7px 8px;
+    border-bottom: 1px solid #dfe6f0;
+}
+
+.cfps-user-thead-filters .form-control {
+    height: 33px !important;
+    padding: 4px 8px !important;
+    font-size: 0.9rem !important;
+}
+
+.cfps-user-table tbody tr {
+    border-bottom: 1px solid #edf2f7;
+    transition: background-color 0.12s ease;
+}
+
+.cfps-user-table tbody tr:nth-child(even) {
+    background-color: #fbfcfe;
+}
+
+.cfps-user-table tbody tr:hover {
+    background-color: #eef4ff;
+}
+
+.cfps-user-table tbody td {
+    padding: 9px 10px;
+    vertical-align: middle;
+    color: #263238;
+}
+
+.col-num {
+    width: 48px;
+    text-align: center !important;
+    color: #607d8b;
+}
+
+.col-actions {
+    width: 106px;
+    white-space: nowrap;
+}
+
+.col-center {
+    text-align: center !important;
+    white-space: nowrap;
+}
+
+.cfps-action-btns,
+.cfps-inline-btns {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cfps-username {
+    color: #1a237e;
+}
+
+.cfps-user-empty {
+    text-align: center;
+    padding: 36px 16px !important;
+    color: #607d8b;
+    font-weight: 600;
+}
+
+/* ป้ายกำกับสี (Badges) */
+.cfps-badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.35;
+    white-space: nowrap;
+}
+
+.cfps-badge--indigo  { background: #e8eaf6; color: #1a237e; }
+.cfps-badge--blue    { background: #e3f2fd; color: #0d47a1; }
+.cfps-badge--teal    { background: #e0f2f1; color: #00695c; }
+.cfps-badge--success { background: #e8f5e9; color: #1b5e20; }
+.cfps-badge--warning { background: #fff8e1; color: #e65100; }
+.cfps-badge--danger  { background: #ffebee; color: #b71c1c; }
+.cfps-badge--muted   { background: #eceff1; color: #546e7a; }
+
+/* ส่วนท้ายตารางและ Pagination */
+.cfps-user-card__footer {
+    padding: 10px 16px;
+    background: #f8fafd;
+    border-top: 1px solid #e3e9f2;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cfps-user-pagination {
+    margin: 0 !important;
+}
+
+/* Modal & Toast Notifications */
+#cfps-user-modal .modal-dialog {
+    width: 94%;
+    max-width: 720px;
+    margin: 28px auto;
+}
+
+#cfps-user-modal .modal-content {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.28);
+}
+
+#cfps-user-modal .modal-header {
+    background: linear-gradient(90deg, #1a237e 0%, #283593 65%, #1565c0 100%);
+    color: #ffffff;
+    padding: 14px 20px;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#cfps-user-modal .modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+#cfps-user-modal .modal-header .close {
+    color: #ffffff;
+    opacity: 0.9;
+    text-shadow: none;
+    font-size: 26px;
+    margin: 0 0 0 auto;
+}
+
+#cfps-user-modal .modal-body {
+    padding: 20px 22px;
+    background: #ffffff;
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+}
+
+#cfps-user-modal .modal-body h1:first-child,
+#cfps-user-modal .modal-body .breadcrumb {
+    display: none;
+}
+
+.cfps-modal-loading {
+    text-align: center;
+    padding: 36px 16px;
+    color: #283593;
+    font-weight: 600;
+}
+
+.cfps-toast-container {
+    position: fixed;
+    top: 64px;
+    right: 18px;
+    z-index: 2050;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: min(400px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.cfps-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 9px;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.22);
+}
+
+.cfps-toast--success { background: #1b5e20; }
+.cfps-toast--error   { background: #b71c1c; }
+.cfps-toast--warning { background: #e65100; }
+.cfps-toast--info    { background: #1565c0; }
+
+.cfps-toast__close {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Responsive Card Layout สำหรับหน้าจอมือถือ (กว้างไม่เกิน 767px) */
+@media (max-width: 767px) {
+    .cfps-user-table {
+        min-width: 0;
+    }
+    .cfps-user-thead-titles {
+        display: none;
+    }
+    .cfps-user-thead-filters {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        padding: 10px;
+        background: #f1f5fb;
+    }
+    .cfps-user-thead-filters td {
+        padding: 0;
+        border: none;
+        background: transparent;
+    }
+    .cfps-user-thead-filters td:empty {
+        display: none;
+    }
+    .cfps-user-table tbody tr {
+        display: block;
+        margin: 10px;
+        border: 1px solid #dce4ef;
+        border-radius: 10px;
+        background: #ffffff !important;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+    }
+    .cfps-user-table tbody td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        text-align: right !important;
+        width: auto !important;
+    }
+    .cfps-user-table tbody td:last-child {
+        border-bottom: none;
+    }
+    .cfps-user-table tbody td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #475569;
+        text-align: left;
+        flex-shrink: 0;
+    }
+}

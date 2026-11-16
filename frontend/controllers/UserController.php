@@ -63,14 +63,74 @@ class UserController extends BaseController
         }
 
         Yii::$app->facilityAccess->requirePermission('manageUsers');
+
+        $request = \Yii::$app->request;
+        if ($request->isAjax && $request->headers->get('X-CFPS-Ajax') === '1') {
+            $response = \Yii::$app->response;
+            $response->off(\yii\web\Response::EVENT_BEFORE_SEND);
+            $response->on(\yii\web\Response::EVENT_BEFORE_SEND, function ($event) {
+                /** @var \yii\web\Response $res */
+                $res = $event->sender;
+                $isRedirect = $res->headers->has('X-Redirect')
+                    || $res->headers->has('Location')
+                    || ($res->statusCode >= 300 && $res->statusCode < 400);
+
+                if ($isRedirect) {
+                    $redirectUrl = $res->headers->get('X-Redirect') ?: $res->headers->get('Location');
+                    $res->headers->remove('X-Redirect');
+                    $res->headers->remove('Location');
+
+                    $flashes = \Yii::$app->session->getAllFlashes(true);
+                    $hasError = !empty($flashes['error']) || !empty($flashes['danger']);
+
+                    $res->statusCode = 200;
+                    $res->format = \yii\web\Response::FORMAT_JSON;
+                    $res->data = [
+                        'success' => !$hasError,
+                        'flashes' => $flashes,
+                        'redirect' => $redirectUrl,
+                    ];
+                }
+            });
+        }
+
         return true;
     }
+
+    /**
+     * แยกการเรนเดอร์สำหรับโหมดตาราง AJAX (_table) และโหมดหน้าต่าง Modal
+     */
+    public function render($view, $params = [])
+    {
+        $request = \Yii::$app->request;
+
+        // รองรับปุ่ม "แสดงทั้งหมด" (per-page=all) บนหน้า index
+        if ($view === 'index' && isset($params['dataProvider']) && $request->get('per-page') === 'all') {
+            $params['dataProvider']->pagination = false;
+        }
+
+        // โหลดเฉพาะส่วนข้อมูลตารางเมื่อกรอง/เปลี่ยนหน้า/เรียงลำดับผ่าน AJAX
+        if ($view === 'index' && $request->isAjax && $request->headers->get('X-CFPS-Table') === '1') {
+            return $this->renderPartial('_table', $params);
+        }
+
+        // โหลดเฉพาะเนื้อหาฟอร์มเมื่อเปิดในหน้าต่าง Modal
+        if ($request->isAjax && $request->headers->get('X-CFPS-Modal') === '1') {
+            return $this->renderAjax($view, $params);
+        }
+
+        return parent::render($view, $params);
+    }
+
 
     /** -------------------------------- INDEX -------------------------------- */
     public function actionIndex()
     {
         $searchModel  = new UserSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        if (Yii::$app->request->get('per-page') === 'all') {
+            $dataProvider->pagination = false;
+        }
         $roleLabels = [];
         $models = $dataProvider->getModels();
         $adminUserIds = [];
