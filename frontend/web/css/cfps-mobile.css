@@ -436,3 +436,14 @@
         max-width: 45%;
     }
 }
+
+@media (max-width: 767px) {
+    section.content-header > .breadcrumb {
+        font-size: 0.82rem !important;
+        text-align: right !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+}

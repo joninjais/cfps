@@ -370,3 +370,32 @@ html, body {
 .box > [class*="col-"]:last-child {
     margin-bottom: 14px;
 }
+
+/* ==========================================================================
+   จัดตำแหน่ง Breadcrumb ชิดขวา (Right-aligned Breadcrumb)
+   ========================================================================== */
+section.content-header {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 16px;
+    padding: 12px 20px 4px !important;
+}
+
+/* ปิด pseudo-element ของ clearfix เฉพาะจุดนี้เพื่อไม่ให้ดัน Flex item */
+section.content-header::before,
+section.content-header::after {
+    display: none !important;
+}
+
+section.content-header > .breadcrumb,
+.content-wrapper > .breadcrumb,
+.content > .breadcrumb {
+    margin-left: auto !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    text-align: right !important;
+    float: none !important;
+}

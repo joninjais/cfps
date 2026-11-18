@@ -1,141 +1,72 @@
 <?php
 use yii\helpers\Html;
+use yii\helpers\Url;
 use yii\bootstrap\ActiveForm;
-
 
 /* @var $this yii\web\View */
 /* @var $form yii\bootstrap\ActiveForm */
 /* @var $model \common\models\LoginForm */
 
-$this->title = 'โปรแกรม Foreigner work fund : พังงา';
-
-$fieldOptions1 = [
-    'options' => ['class' => 'form-group has-feedback'],
-    'inputTemplate' => "{input}<span class='glyphicon glyphicon-user form-control-feedback'></span>"
-];
-
-$fieldOptions2 = [
-    'options' => ['class' => 'form-group has-feedback'],
-    'inputTemplate' => "{input}<span class=' form-control-feedback'><i class='fa fa-fw fa-key'></i></span>"
-];
+$this->title = 'เข้าสู่ระบบ | CFPS พังงา';
+$webroot = Yii::getAlias('@frontend/web');
+$cssVer = is_file($webroot . '/css/cfps-login.css') ? filemtime($webroot . '/css/cfps-login.css') : 1;
+$jsVer  = is_file($webroot . '/js/cfps-login.js') ? filemtime($webroot . '/js/cfps-login.js') : 1;
+$this->registerCssFile('@web/css/cfps-login.css?v=' . $cssVer);
+$this->registerJsFile('@web/js/cfps-login.js?v=' . $jsVer, ['position' => \yii\web\View::POS_END]);
 ?>
+<div class="login-box">
+    <div class="cfps-login-card">
+        <div class="cfps-login-topbar"></div>
+        <div class="cfps-login-inner">
+            <div class="cfps-login-brand">
+                <img src="<?= Url::to('@web/img/logoMOPH.png') ?>" alt="MOPH">
+                <div>
+                    <h1 class="cfps-login-brand-title">โปรแกรมเคลมต่างด้าว</h1>
+                    <p class="cfps-login-brand-sub">Foreigner Work Fund · จ.พังงา</p>
+                </div>
+            </div>
 
+            <h2 class="cfps-login-heading">เข้าสู่ระบบสำหรับเจ้าหน้าที่</h2>
 
-<style>
-.cfps-login-bg {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.cfps-login-box {
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 6px 32px 0 rgba(0,0,0,0.10);
-    padding: 36px 32px 28px 32px;
-    max-width: 370px;
-    width: 100%;
-    margin: 32px auto;
-    font-family: 'Sarabun', 'Prompt', Arial, sans-serif;
-    font-size: 1.18rem; /* เพิ่มขนาดตัวอักษรหลัก */
-}
-.cfps-login-logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 18px;
-}
-.cfps-login-logo img {
-    width: 48px;
-    height: 48px;
-    display: block;
-}
-.cfps-login-title {
-  font-size: 1.55rem; /* ใหญ่ขึ้น */
-  font-weight: 700;
-  color: #00796b;
-  line-height: 1.3;
-  text-align: left;
-}
-.cfps-login-box .login-box-msg {
-  font-size: 1.25rem; /* ใหญ่ขึ้น */
-  color: #333;
-  margin-bottom: 20px;
-  text-align: center;
-}
-.cfps-login-box .form-group {
-  margin-bottom: 20px;
-}
-.cfps-login-box .form-control {
-  border-radius: 8px;
-  font-size: 1.18rem; /* ใหญ่ขึ้น */
-  padding: 14px 16px;
-  border: 1px solid #b2dfdb;
-  box-shadow: none;
-}
-.cfps-login-box .btn-primary {
-  background: #009688;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.18rem; /* ใหญ่ขึ้น */
-  font-weight: 600;
-  padding: 12px 0;
-  transition: background 0.2s;
-}
-.cfps-login-box .btn-primary:hover {
-  background: #00796b;
-}
-.cfps-login-box .alert {
-  font-size: 1.13rem; /* ใหญ่ขึ้น */
-  border-radius: 8px;
-}
-</style>
+            <?php $form = ActiveForm::begin([
+                'id' => 'login-form',
+                'enableClientValidation' => true,
+            ]); ?>
 
-<div class="cfps-login-bg">
-  <div class="cfps-login-box">
-    <div class="cfps-login-logo">
-      <img src="<?= Yii::$app->request->baseUrl . '/img/logoMOPH.png' ?>" alt="logo">
-      <div class="cfps-login-title">
-        โปรแกรมเคลมต่างด้าว<br>Foreigner work fund<br>Phang-nga
-      </div>
+            <?= $form->field($model, 'username', [
+                'options' => ['class' => 'form-group cfps-login-field'],
+                'template' => '{label}<div class="cfps-input-wrap"><i class="fa fa-user cfps-input-icon"></i>{input}</div>{error}',
+            ])->textInput([
+                'autofocus' => true,
+                'placeholder' => 'ระบุชื่อผู้ใช้งาน (Username)',
+                'autocomplete' => 'username',
+            ])->label('ชื่อผู้ใช้งาน') ?>
+
+            <?= $form->field($model, 'password', [
+                'options' => ['class' => 'form-group cfps-login-field'],
+                'template' => '{label}<div class="cfps-input-wrap"><i class="fa fa-lock cfps-input-icon"></i>{input}<button type="button" class="cfps-pw-toggle" data-toggle-password="loginform-password" aria-label="แสดงหรือซ่อนรหัสผ่าน"><i class="fa fa-eye"></i></button></div><div id="cfps-capslock-hint" class="cfps-capslock-hint"><i class="fa fa-exclamation-triangle"></i> เปิดปุ่ม Caps Lock ค้างไว้อยู่</div>{error}',
+            ])->passwordInput([
+                'placeholder' => 'ระบุรหัสผ่าน',
+                'autocomplete' => 'current-password',
+            ])->label('รหัสผ่าน') ?>
+
+            <?= Html::submitButton('<i class="fa fa-sign-in"></i> เข้าสู่ระบบ', [
+                'class' => 'btn btn-primary cfps-login-submit',
+                'name' => 'login-button',
+            ]) ?>
+
+            <?php ActiveForm::end(); ?>
+
+            <?php if (is_file(Yii::getAlias('@frontend/views/site/_registration-link.php'))): ?>
+                <div style="margin-top: 14px;">
+                    <?= $this->render('@frontend/views/site/_registration-link') ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="cfps-login-footer">
+                <?= Html::a('<i class="fa fa-book"></i> คู่มือการใช้งาน', ['@web/manual.html'], ['target' => '_blank', 'rel' => 'noopener']) ?>
+                <?= Html::a('<i class="fa fa-shield"></i> นโยบาย PDPA', ['@web/pdpa.html'], ['target' => '_blank', 'rel' => 'noopener']) ?>
+            </div>
+        </div>
     </div>
-    <div class="login-box-msg">เข้าสู่ระบบ</div>
-
-    <?php if (Yii::$app->session->hasFlash('success')): ?>
-      <div class="alert alert-success"><?= Html::encode(Yii::$app->session->getFlash('success')) ?></div>
-    <?php endif; ?>
-    <?php if (Yii::$app->session->hasFlash('error')): ?>
-      <div class="alert alert-danger alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-        <i class="fa fa-ban"></i>
-        <?= htmlspecialchars(Yii::$app->session->getFlash('error')) ?>
-      </div>
-    <?php endif; ?>
-
-    <?php $form = ActiveForm::begin(['id' => 'login-form', 'enableClientValidation' => false]); ?>
-
-    <?= $form
-      ->field($model, 'username', $fieldOptions1)
-      ->label(false)
-      ->textInput(['placeholder' => $model->getAttributeLabel('username')]) ?>
-
-    <?= $form
-      ->field($model, 'password', $fieldOptions2)
-      ->label(false)
-      ->passwordInput(['placeholder' => $model->getAttributeLabel('password')]) ?>
-
-    <div class="row">
-      <div class="col-xs-8">
-        <?php // echo $form->field($model, 'rememberMe')->checkbox() ?>
-      </div>
-      <div class="col-xs-4">
-        <?= Html::submitButton('Sign in', ['class' => 'btn btn-primary btn-block', 'name' => 'login-button']) ?>
-      </div>
-    </div>
-
-    <?php ActiveForm::end(); ?>
-    <?= $this->render('@frontend/views/site/_registration-link') ?>
-  </div>
 </div>

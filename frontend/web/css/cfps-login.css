@@ -1,0 +1,189 @@
+.login-page {
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 24px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: radial-gradient(circle at top left, #e0f7fa 0%, #d4eef5 48%, #c5e3f6 100%) !important;
+}
+
+.login-page > .wrapper,
+.login-box {
+    width: 100% !important;
+    max-width: 430px !important;
+    margin: 0 auto !important;
+}
+
+.cfps-login-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid rgba(26, 35, 126, 0.10);
+    box-shadow: 0 12px 36px rgba(26, 35, 126, 0.12);
+    overflow: hidden;
+}
+
+.cfps-login-topbar {
+    height: 6px;
+    background: linear-gradient(90deg, #1a237e 0%, #1565c0 55%, #00897b 100%);
+}
+
+.cfps-login-inner {
+    padding: 30px 32px 26px;
+}
+
+.cfps-login-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.cfps-login-brand img {
+    width: 54px;
+    height: 54px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.cfps-login-brand-title {
+    margin: 0;
+    font-size: 19px !important;
+    font-weight: 700;
+    color: #00695c;
+    line-height: 1.3;
+}
+
+.cfps-login-brand-sub {
+    margin: 3px 0 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #546e7a;
+}
+
+.cfps-login-heading {
+    margin: 0 0 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #edf2f7;
+    font-size: 16px !important;
+    font-weight: 700;
+    color: #1a237e;
+    text-align: center;
+}
+
+.cfps-login-field label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
+.cfps-input-wrap {
+    position: relative;
+}
+
+.cfps-input-wrap .form-control {
+    height: 44px !important;
+    padding: 10px 42px 10px 38px !important;
+    border-radius: 9px !important;
+    border: 1.5px solid #cbd5e1 !important;
+    background-color: #f8fafc !important;
+    font-size: 15.5px !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.cfps-input-wrap .form-control:focus {
+    background-color: #ffffff !important;
+    border-color: #1a237e !important;
+    box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.14) !important;
+}
+
+.cfps-input-wrap input:-webkit-autofill,
+.cfps-input-wrap input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #f1f5fe inset !important;
+    -webkit-text-fill-color: #1e293b !important;
+}
+
+.cfps-input-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 15px;
+    pointer-events: none;
+}
+
+.cfps-pw-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: #64748b;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.cfps-pw-toggle:hover {
+    color: #1a237e;
+    background: rgba(26, 35, 126, 0.06);
+}
+
+.cfps-capslock-hint {
+    display: none;
+    margin-top: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #b45309;
+}
+
+.cfps-login-submit {
+    width: 100%;
+    height: 44px;
+    margin-top: 8px;
+    border: none !important;
+    border-radius: 9px !important;
+    background: linear-gradient(90deg, #1a237e 0%, #283593 100%) !important;
+    color: #ffffff !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(26, 35, 126, 0.22);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.cfps-login-submit:hover {
+    background: linear-gradient(90deg, #283593 0%, #1565c0 100%) !important;
+    box-shadow: 0 6px 16px rgba(26, 35, 126, 0.28);
+}
+
+.cfps-login-footer {
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid #edf2f7;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 13px;
+}
+
+.cfps-login-footer a {
+    color: #475569;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.cfps-login-footer a:hover {
+    color: #1a237e;
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .cfps-login-inner {
+        padding: 24px 20px 20px;
+    }
+}

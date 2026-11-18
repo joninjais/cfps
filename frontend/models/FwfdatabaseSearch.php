@@ -43,7 +43,7 @@ class FwfdatabaseSearch extends Fwfdatabase
     {
         $query = Fwfdatabase::find();
 
-        Yii::$app->facilityAccess->scopeQuery($query, 'FundHolderID');
+        // Yii::$app->facilityAccess->scopeQuery($query, 'FundHolderID');
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
