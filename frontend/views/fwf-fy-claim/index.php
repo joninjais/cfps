@@ -1,254 +1,378 @@
 <?php
 use yii\helpers\Html;
 use yii\helpers\Url;
-use yii\widgets\LinkPager;
-use frontend\models\User;
 
 $this->title = 'กองทุน Claim ตามปีงบประมาณ';
 $this->params['breadcrumbs'][] = $this->title;
 
-$session = Yii::$app->session;
-$checklogin = User::findOne(['user' => $session['user']]);
-if (!$checklogin) {
-    echo "<script>window.location='" . Url::to(['/site/login']) . "';</script>";
+$currentFy   = (int)($currentFy ?? (((int)date('n') >= 10) ? ((int)date('Y') + 544) : ((int)date('Y') + 543)));
+$peengob     = (int)($peengob ?? $currentFy);
+$date1       = (string)($date1 ?? (($peengob - 1) . '-10-01'));
+$date2       = (string)($date2 ?? ($peengob . '-09-30'));
+$isFullFy    = (bool)($isFullFy ?? true);
+$message     = (string)($message ?? '');
+$summaryRows = is_array($summaryRows ?? null) ? $summaryRows : [];
+$isAdmin     = (bool)($isAdmin ?? false);
+
+$lastImportDisplay = '—';
+if (!empty($lastImport)) {
+    $ts = strtotime((string)$lastImport);
+    $lastImportDisplay = $ts ? (date('d/m/', $ts) . ((int)date('Y', $ts) + 543) . date(' H:i:s', $ts)) : (string)$lastImport;
 }
+
+// รายการปุ่มปีงบประมาณย้อนหลัง 6 ปี (เช่น 2570 .. 2565)
+$fyButtons = [];
+for ($y = $currentFy; $y >= $currentFy - 5; $y--) {
+    $fyButtons[] = $y;
+}
+if (!in_array($peengob, $fyButtons, true)) {
+    array_unshift($fyButtons, $peengob);
+    $fyButtons = array_unique($fyButtons);
+    rsort($fyButtons);
+}
+
+// สร้างรายการปุ่ม 12 เดือนของปีงบประมาณที่เลือก (ต.ค. .. ก.ย.)
+$thaiMonths = [
+    10 => 'ต.ค.', 11 => 'พ.ย.', 12 => 'ธ.ค.',
+    1  => 'ม.ค.', 2  => 'ก.พ.', 3  => 'มี.ค.',
+    4  => 'เม.ย.', 5  => 'พ.ค.', 6  => 'มิ.ย.',
+    7  => 'ก.ค.', 8  => 'ส.ค.', 9  => 'ก.ย.',
+];
+$monthButtons = [];
+foreach ($thaiMonths as $mNum => $mLabel) {
+    $beYear = ($mNum >= 10) ? ($peengob - 1) : $peengob;
+    $ceYear = $beYear - 543;
+    $lastDay = (int)(new \DateTime(sprintf('%04d-%02d-01', $ceYear, $mNum)))->format('t');
+    $mStartBe = sprintf('%04d-%02d-01', $beYear, $mNum);
+    $mEndBe   = sprintf('%04d-%02d-%02d', $beYear, $mNum, $lastDay);
+    $monthButtons[] = [
+        'label'  => $mLabel . ' ' . substr((string)$beYear, -2),
+        'date1'  => $mStartBe,
+        'date2'  => $mEndBe,
+        'active' => ($date1 === $mStartBe && $date2 === $mEndBe),
+    ];
+}
+
+$prevFy = $peengob - 1;
+$nextFy = $peengob + 1;
+
+$sumRecords = 0;
+$sumDaysFy  = 0;
+$sumManage  = 0.0;
+$sumPp      = 0.0;
+$sumClaim   = 0.0;
+foreach ($summaryRows as $sr) {
+    $sumRecords += (int)($sr['record_count'] ?? 0);
+    $sumDaysFy  += (int)($sr['total_days_in_fy'] ?? 0);
+    $sumManage  += (float)($sr['total_manage_ssj_in_fy'] ?? 0);
+    $sumPp      += (float)($sr['total_pp_in_fy'] ?? 0);
+    $sumClaim   += (float)($sr['total_claim_in_fy'] ?? 0);
+}
+
+$badgeText = $isFullFy
+    ? ('ปีงบ ' . $peengob)
+    : ($date1 . ' ถึง ' . $date2);
+
+$this->registerCss("
+.fwf-filter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 260px;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+@media (max-width: 900px) {
+    .fwf-filter-grid { grid-template-columns: 1fr; }
+}
+.fwf-fy-panel {
+    background: #f3f9f1;
+    border: 1px solid #d7ebd2;
+    border-radius: 8px;
+    padding: 14px 16px;
+}
+.fwf-fy-title {
+    color: #2e7d32;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+}
+.fwf-fy-btn-row, .fwf-month-btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+.fwf-fy-btn-row { margin-bottom: 10px; }
+.fwf-fy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 13px;
+    border-radius: 6px;
+    background: #2e7d32;
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none !important;
+    border: 2px solid transparent;
+    transition: all .15s ease;
+}
+.fwf-fy-btn:hover { background: #1b5e20; color: #ffffff !important; }
+.fwf-fy-btn.is-active {
+    background: #1b5e20;
+    border-color: #f59e0b;
+    box-shadow: 0 2px 6px rgba(27, 94, 32, 0.28);
+}
+.fwf-m-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 11px;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #1e293b !important;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: all .15s ease;
+}
+.fwf-m-btn:hover {
+    background: #e8f5e9;
+    border-color: #2e7d32;
+    color: #1b5e20 !important;
+}
+.fwf-m-btn.is-active {
+    background: #2e7d32;
+    border-color: #2e7d32;
+    color: #ffffff !important;
+    font-weight: 700;
+}
+");
 ?>
+<div class="fwf-fy-claim-index">
 
-<div class="row">
-<div class="col-md-12">
-
-<!-- ── Header box ─────────────────────────────────────── -->
-<div class="box box-success box-solid">
-  <div class="box-header with-border" style="background:linear-gradient(135deg,#145a32,#27ae60)!important;">
-    <h3 class="box-title" style="color:#fff;">
-      <i class="fa fa-fw fa-calendar-o"></i> <?= Html::encode($this->title) ?>
-    </h3>
-    <div class="box-tools pull-right">
-      <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-    </div>
-  </div>
-  <div class="box-body">
-
-    <!-- ── Alert message ─────────────────────────────── -->
-    <?php if (!empty($message)): ?>
-      <div class="alert alert-<?= strpos($message, 'ผิดพลาด') !== false ? 'danger' : 'success' ?> alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-        <i class="fa fa-<?= strpos($message, 'ผิดพลาด') !== false ? 'times-circle' : 'check-circle' ?>"></i>
-        <?= Html::encode($message) ?>
-      </div>
+    <?php if ($message !== ''): ?>
+        <div class="alert alert-info"><?= Html::encode($message) ?></div>
     <?php endif; ?>
 
-    <!-- ── Stat bar ───────────────────────────────────── -->
-    <div class="row" style="margin-bottom:14px;">
-      <div class="col-md-3 col-sm-6">
-        
-        <div class="info-box" style="min-height:60px;">
-          <span class="info-box-icon bg-green"><i class="fa fa-table"></i></span>          
-          <div class="info-box-content">
-            <span class="info-box-text">แถวในตาราง</span>
-            <span class="info-box-number"><?= number_format($totalRows) ?></span>
-          </div>
+    <!-- กล่องตัวกรองช่วงเวลา ปีงบประมาณ และรายเดือน (รูปแบบเดียวกับหน้า Dashboard) -->
+    <div class="box box-success">
+        <div class="box-header with-border">
+            <h3 class="box-title">
+                <i class="fa fa-calendar"></i> <?= Html::encode($this->title) ?> — สรุปข้อมูลกองทุนตามช่วงเวลา
+            </h3>
+            <div class="box-tools pull-right">
+                <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+            </div>
         </div>
-      </div>
-      <div class="col-md-9 col-sm-6" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px;">
-        <!-- Clear button (POST via form) -->
-        <?php if (Yii::$app->user->can('manageFwfData')): ?>
-        <form method="post" action="<?= Url::to(['/fwf-fy-claim/clear']) ?>" style="display:inline;"
-              onsubmit="return confirm('⚠️ ยืนยันการลบข้อมูลทั้งหมด <?= number_format($totalRows) ?> แถว? ไม่สามารถกู้คืนได้');">
-          <input type="hidden" name="<?= Yii::$app->request->csrfParam ?>" value="<?= Yii::$app->request->getCsrfToken() ?>">
-          <button type="submit" class="btn btn-danger" style="font-size:1rem;">
-            <i class="fa fa-fw fa-trash"></i> 1.เคลียข้อมูลทั้งหมด
-          </button>
-        </form>
-        <!-- Import button -->
-        <?= Html::beginForm(['/fwf-fy-claim/import'], 'post', ['style' => 'display:inline;']) ?>
-        <?= Html::submitButton(
-            '<i class="fa fa-fw fa-download"></i> 2.นำเข้าข้อมูล (Import)',
-            [
-                'class'   => 'btn btn-primary',
-                'title'   => 'นำเข้าข้อมูลจาก fwfdatabase คำนวณ claim แยกรายปีงบประมาณ (ไม่นำเข้าซ้ำ)',
-                'data-confirm' => 'ยืนยันการนำเข้าข้อมูล? อาจใช้เวลาสักครู่',
-                'style'   => 'font-size:1rem;',
-            ]
-        ) ?>
-        <?= Html::endForm() ?>
-        <?php endif; ?>
 
-        <!-- Export button -->
-        <?= Html::a(
-            '<i class="fa fa-fw fa-file-excel-o"></i> 3.ส่งออก Excel (.xlsx)',
-            array_merge(['/fwf-fy-claim/export'], $fyFilter ? ['fy' => $fyFilter] : [], $hosFilter !== '' ? ['hos' => $hosFilter] : []),
-            [
-                'class'  => 'btn btn-success',
-                'style'  => 'font-size:1rem;',
-                'title'  => 'ดาวน์โหลด Excel ตามตัวกรองที่เลือก (2 sheet: ข้อมูล Record + สรุปรายหน่วยบริการ)',
-                'target' => '_blank',
-            ]
-        ) ?>
+        <div class="box-body">
+            <div style="font-size:13px; color:#64748b; margin-bottom:6px;">
+                <i class="fa fa-calendar"></i> ค้นหาแบบช่วงเวลา
+            </div>
 
-        <?php if (!empty($lastImport)): ?>
-        <span style="font-size:1rem;color:#555;">
-          <i class="fa fa-fw fa-clock-o"></i> นำเข้าข้อมูลล่าสุด: <strong><?= Html::encode(date('d/m/', strtotime($lastImport)) . (date('Y', strtotime($lastImport)) + 543) . date(' H:i:s', strtotime($lastImport))) ?></strong>
-        </span>
-        <?php endif; ?>
+            <form method="get" action="<?= Url::to(['index']) ?>">
+                <input type="hidden" name="peengob" value="<?= (int)$peengob ?>">
+                <div class="fwf-filter-grid">
+                    <div class="input-group">
+                        <span class="input-group-addon js-thai-dp-trigger" data-target="fwf-date1" style="cursor:pointer;" title="เลือกวันที่เริ่มต้น">
+                            <i class="fa fa-calendar"></i>
+                        </span>
+                        <input type="text" id="fwf-date1" name="date1" value="<?= Html::encode($date1) ?>" class="form-control" placeholder="พ.ศ.-ดด-วว เช่น 2569-10-01">
+                        <input type="date" id="fwf-date1-native" style="position:absolute; opacity:0; width:1px; height:1px; pointer-events:none;">
+                    </div>
 
-      </div>
+                    <div class="input-group">
+                        <span class="input-group-addon js-thai-dp-trigger" data-target="fwf-date2" style="cursor:pointer;" title="เลือกวันที่สิ้นสุด">
+                            <i class="fa fa-calendar"></i>
+                        </span>
+                        <input type="text" id="fwf-date2" name="date2" value="<?= Html::encode($date2) ?>" class="form-control" placeholder="พ.ศ.-ดด-วว เช่น 2570-09-30">
+                        <input type="date" id="fwf-date2-native" style="position:absolute; opacity:0; width:1px; height:1px; pointer-events:none;">
+                    </div>
+
+                    <div>
+                        <button type="submit" class="btn btn-success" style="width:100%; height:38px; font-weight:700;">
+                            <i class="fa fa-search"></i> ค้นหา
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="fwf-fy-panel">
+                <div class="fwf-fy-title">
+                    <i class="fa fa-calendar-check-o"></i> ปีงบประมาณ <?= (int)$peengob ?>
+                </div>
+
+                <div class="fwf-fy-btn-row">
+                    <?php foreach ($fyButtons as $btnFy): ?>
+                        <?php
+                        $fyD1 = ($btnFy - 1) . '-10-01';
+                        $fyD2 = $btnFy . '-09-30';
+                        $fyActive = ($date1 === $fyD1 && $date2 === $fyD2);
+                        ?>
+                        <?= Html::a(
+                            '<i class="fa fa-calendar"></i> ปีงบ ' . (int)$btnFy,
+                            ['index', 'date1' => $fyD1, 'date2' => $fyD2, 'peengob' => $btnFy],
+                            ['class' => 'fwf-fy-btn' . ($fyActive ? ' is-active' : '')]
+                        ) ?>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="fwf-month-btn-row">
+                    <?= Html::a(
+                        '<i class="fa fa-chevron-left"></i>',
+                        ['index', 'date1' => ($prevFy - 1) . '-10-01', 'date2' => $prevFy . '-09-30', 'peengob' => $prevFy],
+                        ['class' => 'fwf-m-btn', 'title' => 'ปีงบประมาณ ' . $prevFy]
+                    ) ?>
+
+                    <?php foreach ($monthButtons as $mb): ?>
+                        <?= Html::a(
+                            Html::encode($mb['label']),
+                            ['index', 'date1' => $mb['date1'], 'date2' => $mb['date2'], 'peengob' => $peengob],
+                            ['class' => 'fwf-m-btn' . ($mb['active'] ? ' is-active' : '')]
+                        ) ?>
+                    <?php endforeach; ?>
+
+                    <?= Html::a(
+                        '<i class="fa fa-chevron-right"></i>',
+                        ['index', 'date1' => ($nextFy - 1) . '-10-01', 'date2' => $nextFy . '-09-30', 'peengob' => $nextFy],
+                        ['class' => 'fwf-m-btn', 'title' => 'ปีงบประมาณ ' . $nextFy]
+                    ) ?>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- ── Filter bar ─────────────────────────────────── -->
-    <form method="get" action="<?= Url::to(['/fwf-fy-claim/index']) ?>" class="form-inline" style="margin-bottom:14px;gap:8px;display:flex;flex-wrap:wrap;">
-      <div class="form-group">
-        <label style="margin-right:4px;">ปีงบประมาณ</label>
-        <select name="fy" class="form-control" style="min-width:110px;">
-          <option value="0">-- ทั้งหมด --</option>
-          <?php foreach ($fyList as $fy): ?>
-            <option value="<?= $fy ?>" <?= $fyFilter == $fy ? 'selected' : '' ?>><?= $fy ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="form-group">
-        <label style="margin-right:4px;">โรงพยาบาล</label>
-        <select name="hos" class="form-control" style="min-width:160px;">
-          <option value="">-- ทั้งหมด --</option>
-          <?php foreach ($hosList as $h): ?>
-            <option value="<?= Html::encode($h['FundHolderID']) ?>"
-              <?= $hosFilter === $h['FundHolderID'] ? 'selected' : '' ?>>
-              <?= Html::encode($h['FundHolderID']) ?> - <?= Html::encode($h['hosname'] ?? '-') ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <button type="submit" class="btn btn-default"><i class="fa fa-filter"></i> กรอง</button>
-      <?= Html::a('<i class="fa fa-times"></i> ล้าง', ['/fwf-fy-claim/index'], ['class' => 'btn btn-default']) ?>
-    </form>
+    <!-- กล่องตารางสรุปข้อมูล Claim แยกรายหน่วยบริการ -->
+    <div class="box" style="margin-bottom:20px;">
+        <div class="box-header with-border" style="background:#1a237e; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;">
+            <h3 class="box-title" style="color:#fff; margin:0;">
+                <i class="fa fa-bar-chart"></i> สรุปข้อมูล Claim แยกรายหน่วยบริการ
+                <span class="label" style="background:#f59e0b; color:#fff; margin-left:6px; padding:3px 9px; border-radius:4px;">
+                    <?= Html::encode($badgeText) ?>
+                </span>
+            </h3>
 
-    <!-- ── Summary table ──────────────────────────────── -->
-    <?php if (!empty($summaryRows)): ?>
-    <div class="box box-solid" style="margin-bottom:18px;">
-      <div class="box-header with-border" style="background:linear-gradient(135deg,#1a237e,#283593);">
-        <h4 class="box-title" style="color:#fff;">
-          <i class="fa fa-fw fa-bar-chart"></i> สรุปข้อมูล Claim แยกรายหน่วยบริการ
-          <?php if ($fyFilter): ?><span class="label label-warning" style="font-size:0.9rem;">ปีงบ <?= $fyFilter ?></span><?php endif; ?>
-          <?php if ($hosFilter !== ''): ?><span class="label label-info" style="font-size:0.9rem;"><?= Html::encode($hosFilter) ?></span><?php endif; ?>
-        </h4>
-        <div class="box-tools pull-right">
-          <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-        </div>
-      </div>
-      <div class="box-body" style="padding:10px;">
-        <div class="table-responsive">
-          <table class="table table-bordered table-hover" style="font-size:0.95rem;margin-bottom:0;">
-            <thead>
-              <tr style="background:#37474f;color:#fff;">
-                <th style="white-space:nowrap;">#</th>
-                <th style="white-space:nowrap;">รหัส รพ.</th>
-                <th>ชื่อ รพ.</th>
-                <th style="white-space:nowrap;text-align:center;background:#1a6b3c;">ปีงบ</th>
-                <th style="white-space:nowrap;text-align:right;">จำนวน Record</th>
-                <th style="white-space:nowrap;text-align:right;">วันในปีงบ (รวม)</th>
-                <th style="white-space:nowrap;text-align:right;background:#1565c0;color:#fff;">บริหารจัดการ</th>
-                <th style="white-space:nowrap;text-align:right;background:#2e7d32;color:#fff;">PP</th>
-                <th style="white-space:nowrap;text-align:right;background:#880e4f;color:#fff;">Claim ในปีงบ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php
-              $gtClaimFY = 0; $gtRecords = 0; $gtManage = 0; $gtPP = 0;
-              foreach ($summaryRows as $si => $sr):
-                  $gtClaimFY += (float)$sr['total_claim_in_fy'];
-                  $gtRecords += (int)$sr['record_count'];
-                  $gtManage += (float)$sr['total_manage_ssj_in_fy'];
-                  $gtPP += (float)$sr['total_pp_in_fy'];
-              ?>
-              <tr>
-                <td style="text-align:center;color:#888;"><?= $si + 1 ?></td>
-                <td style="white-space:nowrap;"><?= Html::encode($sr['FundHolderID']) ?></td>
-                <td><?= Html::encode($sr['hosname'] ?? '-') ?></td>
-                <td style="text-align:center;font-weight:700;color:#1a6b3c;"><?= Html::encode($sr['FiscalYear']) ?></td>
-                <td style="text-align:right;"><?= number_format((int)$sr['record_count']) ?></td>
-                <td style="text-align:right;"><?= number_format((int)$sr['total_days_in_fy']) ?></td>
-                <td style="text-align:right;"><?= number_format((float)$sr['total_manage_ssj_in_fy'], 2) ?></td>
-                <td style="text-align:right;"><?= number_format((float)$sr['total_pp_in_fy'], 2) ?></td>
-                <td style="text-align:right;font-weight:700;background:#fff8e1;color:#c2185b;"><?= number_format((float)$sr['total_claim_in_fy'], 2) ?></td>
-              </tr>
-              <?php endforeach; ?>
-            </tbody>
-            <tfoot>
-              <tr style="background:#fff9c4;font-weight:700;">
-                <td colspan="4" style="text-align:right;">รวมทั้งหมด</td>
-                <td style="text-align:right;"><?= number_format($gtRecords) ?></td>
-                <td></td>
-                <td style="text-align:right;"><?= number_format($gtManage, 2) ?></td>
-                <td style="text-align:right;"><?= number_format($gtPP, 2) ?></td>
-                <td style="text-align:right;color:#c2185b;background:#fff8e1;"><?= number_format($gtClaimFY, 2) ?></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-    </div>
-    <?php endif; ?>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-left:auto;">
+                <span style="font-size:12.5px; color:rgba(255,255,255,0.88);">
+                    <i class="fa fa-check-circle" style="color:#81c784;"></i> ซิงค์อัตโนมัติล่าสุด: <?= Html::encode($lastImportDisplay) ?>
+                </span>
 
-    <!-- ── Data table ─────────────────────────────────── -->
-    <div class="table-responsive">
-      <table class="table table-bordered table-hover table-striped" style="font-size:0.95rem;">
-        <thead>
-          <tr style="background:#37474f;color:#fff;">
-            <th style="white-space:nowrap;">#</th>
-            <th style="white-space:nowrap;">รหัส รพ.</th>
-            <th>ชื่อ รพ.</th>
-            <th style="white-space:nowrap;">CID</th>
-            <th style="white-space:nowrap;">วันเริ่มงวด</th>
-            <th style="white-space:nowrap;">วันสิ้นงวด</th>
-            <th style="white-space:nowrap;">งวด</th>
-            <th style="white-space:nowrap;text-align:center;background:#1a6b3c;">ปีงบ</th>
-            <th style="white-space:nowrap;text-align:right;">วันในงวด</th>
-            <th style="white-space:nowrap;text-align:right;">วันในปีงบ</th>
-            <th style="white-space:nowrap;text-align:right;">ราคาบัตร</th>
-            <th style="white-space:nowrap;text-align:right;">Claim</th>
-            <th style="white-space:nowrap;text-align:right;background:#880e4f;color:#fff;">Claim ในปีงบ</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php
-          $models = $dataProvider->getModels();
-          $pagination = $dataProvider->getPagination();
-          $offset = $pagination ? $pagination->getOffset() : 0;
-          if (empty($models)): ?>
-            <tr><td colspan="13" class="text-center text-muted" style="padding:24px;">ไม่มีข้อมูล — กด "นำเข้าข้อมูล" เพื่อเริ่มต้น</td></tr>
-          <?php else: ?>
-            <?php foreach ($models as $i => $row): ?>
-              <tr>
-                <td style="text-align:center;color:#888;"><?= $offset + $i + 1 ?></td>
-                <td style="white-space:nowrap;"><?= Html::encode($row['FundHolderID']) ?></td>
-                <td><?= Html::encode($row['hosname'] ?? '-') ?></td>
-                <td style="white-space:nowrap;font-family:monospace;"><?= Html::encode($row['CID']) ?></td>
-                <td style="white-space:nowrap;"><?= Html::encode($row['PeriodStartDate']) ?></td>
-                <td style="white-space:nowrap;"><?= Html::encode($row['PeriodEndDate']) ?></td>
-                <td style="white-space:nowrap;"><?= Html::encode($row['timeregis']) ?></td>
-                <td style="text-align:center;font-weight:700;color:#1a6b3c;"><?= Html::encode($row['FiscalYear']) ?></td>
-                <td style="text-align:right;"><?= number_format((int)$row['DaysBetween']) ?></td>
-                <td style="text-align:right;"><?= number_format((int)$row['Days_in_FY']) ?></td>
-                <td style="text-align:right;"><?= $row['card_price'] !== null ? number_format((float)$row['card_price'], 2) : '-' ?></td>
-                <td style="text-align:right;"><?= $row['claim'] !== null ? number_format((float)$row['claim'], 2) : '-' ?></td>
-                <td style="text-align:right;font-weight:700;background:#fff8e1;color:#c2185b;">
-                  <?= $row['claim_in_FY'] !== null ? number_format((float)$row['claim_in_FY'], 2) : '-' ?>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          <?php endif; ?>
-        </tbody>
-      </table>
+                <?= Html::a(
+                    '<i class="fa fa-file-excel-o"></i> ส่งออก Excel (.xlsx)',
+                    ['export', 'date1' => $date1, 'date2' => $date2, 'peengob' => $peengob],
+                    ['class' => 'btn btn-success btn-sm', 'data-pjax' => '0']
+                ) ?>
+
+                <?php if ($isAdmin): ?>
+                    <?= Html::a(
+                        '<i class="fa fa-refresh"></i> รีเซ็ตซิงค์ใหม่',
+                        ['clear'],
+                        [
+                            'class' => 'btn btn-default btn-sm',
+                            'data' => [
+                                'method' => 'post',
+                                'confirm' => 'ต้องการล้างตารางพักและดึงข้อมูลคำนวณใหม่ทั้งหมดตามสูตรต้นฉบับใช่หรือไม่?',
+                            ],
+                        ]
+                    ) ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="box-body" style="padding:12px;">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover" style="margin-bottom:0;">
+                    <thead>
+                        <tr>
+                            <th style="background:#263238; color:#fff; text-align:center; width:50px;">#</th>
+                            <th style="background:#263238; color:#fff; width:95px;">รหัส รพ.</th>
+                            <th style="background:#263238; color:#fff;">ชื่อ รพ.</th>
+                            <th style="background:#2e7d32; color:#fff; text-align:center; width:85px;">ปีงบ</th>
+                            <th style="background:#263238; color:#fff; text-align:right;">จำนวน Record</th>
+                            <th style="background:#263238; color:#fff; text-align:right;">วันในปีงบ (รวม)</th>
+                            <th style="background:#1565c0; color:#fff; text-align:right;">บริหารจัดการ</th>
+                            <th style="background:#2e7d32; color:#fff; text-align:right;">PP</th>
+                            <th style="background:#880e4f; color:#fff; text-align:right;">Claim ในปีงบ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($summaryRows)): ?>
+                            <tr>
+                                <td colspan="9" style="text-align:center; padding:24px; color:#64748b;">ไม่พบข้อมูลสำหรับช่วงเวลาที่เลือก</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($summaryRows as $idx => $s): ?>
+                                <tr>
+                                    <td style="text-align:center;"><?= $idx + 1 ?></td>
+                                    <td><?= Html::encode($s['FundHolderID'] ?? '') ?></td>
+                                    <td><?= Html::encode($s['hosname'] ?? '') ?></td>
+                                    <td style="text-align:center; color:#2e7d32; font-weight:700;"><?= (int)($s['FiscalYear'] ?? $peengob) ?></td>
+                                    <td style="text-align:right;"><?= number_format((int)($s['record_count'] ?? 0)) ?></td>
+                                    <td style="text-align:right;"><?= number_format((int)($s['total_days_in_fy'] ?? 0)) ?></td>
+                                    <td style="text-align:right;"><?= number_format((float)($s['total_manage_ssj_in_fy'] ?? 0), 2) ?></td>
+                                    <td style="text-align:right;"><?= number_format((float)($s['total_pp_in_fy'] ?? 0), 2) ?></td>
+                                    <td style="text-align:right; color:#b71c1c; font-weight:700; background:#fffde7;">
+                                        <?= number_format((float)($s['total_claim_in_fy'] ?? 0), 2) ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <tr style="background:#fff9c4; font-weight:700;">
+                                <td colspan="4" style="text-align:right;">รวมทั้งหมด</td>
+                                <td style="text-align:right;"><?= number_format($sumRecords) ?></td>
+                                <td style="text-align:right;"><?= number_format($sumDaysFy) ?></td>
+                                <td style="text-align:right;"><?= number_format($sumManage, 2) ?></td>
+                                <td style="text-align:right;"><?= number_format($sumPp, 2) ?></td>
+                                <td style="text-align:right; color:#b71c1c;"><?= number_format($sumClaim, 2) ?></td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- ── Pagination ─────────────────────────────────── -->
-    <?php if ($dataProvider->getPagination()): ?>
-      <div style="text-align:center;margin-top:10px;">
-        <?= LinkPager::widget(['pagination' => $dataProvider->getPagination()]) ?>
-      </div>
-    <?php endif; ?>
+</div>
 
-  </div><!-- /.box-body -->
-</div><!-- /.box -->
-</div><!-- /.col -->
-</div><!-- /.row -->
+<?php
+$this->registerJs("
+(function() {
+    function beToCe(val) {
+        var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((val || '').trim());
+        if (!m) return '';
+        var y = parseInt(m[1], 10);
+        if (y >= 2400) y -= 543;
+        return y + '-' + m[2] + '-' + m[3];
+    }
+    function ceToBe(val) {
+        var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((val || '').trim());
+        if (!m) return '';
+        var y = parseInt(m[1], 10) + 543;
+        return y + '-' + m[2] + '-' + m[3];
+    }
+    document.querySelectorAll('.js-thai-dp-trigger').forEach(function(btn) {
+        var targetId = btn.getAttribute('data-target');
+        var textInput = document.getElementById(targetId);
+        var dateInput = document.getElementById(targetId + '-native');
+        if (!textInput || !dateInput) return;
+
+        btn.addEventListener('click', function() {
+            var ce = beToCe(textInput.value);
+            if (ce) dateInput.value = ce;
+            if (typeof dateInput.showPicker === 'function') {
+                dateInput.showPicker();
+            } else {
+                dateInput.focus();
+                dateInput.click();
+            }
+        });
+        dateInput.addEventListener('change', function() {
+            if (dateInput.value) {
+                textInput.value = ceToBe(dateInput.value);
+            }
+        });
+    });
+})();
+");
+?>
