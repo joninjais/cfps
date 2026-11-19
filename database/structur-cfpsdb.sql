@@ -764,7 +764,7 @@ BEGIN
     FROM insurance_policies src
     LEFT JOIN fwfdatabase tgt
       ON tgt.PeriodID = src.f_code COLLATE utf8mb4_general_ci
-      AND tgt.FundHolderID = LEFT(src.agency_code,5) COLLATE utf8mb4_general_ci
+      AND tgt.PeriodStartDate = src.effective_date
     WHERE tgt.PeriodID IS NULL
       AND src.effective_date IS NOT NULL
       AND src.expiry_date IS NOT NULL

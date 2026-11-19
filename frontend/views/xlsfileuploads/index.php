@@ -83,7 +83,7 @@ $this->registerCssFile('@web/css/xls-import.css?v=2', ['depends' => ['frontend\a
                             $actions = [];
                             if ((int)$model->importstatus === 0) {
                                 $canImport = $model->typefileupload !== 'insurance'
-                                    || Yii::$app->user->can('manageInsurancePolicies');
+                                    || Yii::$app->user->can('manageOwnFacilityData');
                                 if ($canImport) {
                                     $actions[] = $this->render('_import_button', [
                                         'model' => $model,

@@ -383,7 +383,7 @@ class InsurancepoliciesController extends BaseController
 
     public function actionImport($id)
     {
-        Yii::$app->facilityAccess->requirePermission('manageInsurancePolicies');
+        Yii::$app->facilityAccess->requirePermission('manageOwnFacilityData');
 
         $params = Yii::$app->request->get();
         $xlsid = (int)($params['id'] ?? $id);
@@ -526,7 +526,7 @@ class InsurancepoliciesController extends BaseController
                     if (ctype_digit($agencyCode)) {
                         $agencyCode = str_pad($agencyCode, 5, '0', STR_PAD_LEFT);
                     }
-                    if (!Yii::$app->facilityAccess->canAccessFacility($agencyCode)) {
+                    if (!Yii::$app->facilityAccess->canAccessFacility($agencyCode, true)) {
                         throw new \RuntimeException('รหัสหน่วยบริการอยู่นอกขอบเขตจังหวัดในแถว ' . $row);
                     }
                 }
@@ -539,7 +539,7 @@ class InsurancepoliciesController extends BaseController
                 if (!empty($fCode)) {
                     $isDuplicate = (new \yii\db\Query())
                         ->from('insurance_policies')
-                        ->where(['f_code' => $fCode])
+                        ->where(['f_code' => $fCode, 'effective_date' => $effectiveDate])
                         ->exists();
                 } else {
                     $duplicateCondition = [
