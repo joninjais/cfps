@@ -212,6 +212,55 @@ class XlsUploadUiTest extends TestCase
         self::assertNull(Xlsfileuploads::findOne(2));
     }
 
+    public function testDeleteNormalizesLegacyTypeAndKeepsOtherFacilitiesData(): void
+    {
+        $this->app->db->createCommand(
+            'CREATE TABLE ipdata (exsfile TEXT, hospcode TEXT)'
+        )->execute();
+        $this->app->db->createCommand('CREATE TABLE opdata (exsfile TEXT, hospcode TEXT)')->execute();
+        $this->app->db->createCommand()->insert('xlsfileuploads', [
+            'xlsid' => 5, 'exsfile' => 'legacy-op.xls', 'user' => 'tester',
+            'hoscode' => '00064', 'typefileupload' => 'op',
+        ])->execute();
+        $this->app->db->createCommand()->insert('opdata', ['exsfile' => 'legacy-op.xls', 'hospcode' => '00064'])->execute();
+        self::assertSame(302, $this->controller->actionDelete(5)->statusCode);
+        self::assertSame(0, (int)$this->app->db->createCommand('SELECT COUNT(*) FROM opdata')->queryScalar());
+        $this->app->db->createCommand()->insert('xlsfileuploads', [
+            'xlsid' => 4,
+            'exsfile' => 'legacy-ip.xlsx',
+            'user' => 'tester',
+            'hoscode' => '00064',
+            'typefileupload' => ' IP ',
+        ])->execute();
+        $this->app->db->createCommand()->batchInsert(
+            'ipdata',
+            ['exsfile', 'hospcode'],
+            [
+                ['legacy-ip.xlsx', '00064'],
+                ['legacy-ip.xlsx', '00065'],
+            ]
+        )->execute();
+
+        self::assertSame(302, $this->controller->actionDelete(4)->statusCode);
+        self::assertNull(Xlsfileuploads::findOne(4));
+        self::assertSame(
+            0,
+            (int)$this->app->db->createCommand(
+                'SELECT COUNT(*) FROM ipdata WHERE exsfile = :file AND hospcode = :hoscode',
+                [':file' => 'legacy-ip.xlsx', ':hoscode' => '00064']
+            )
+                ->queryScalar()
+        );
+        self::assertSame(
+            1,
+            (int)$this->app->db->createCommand(
+                'SELECT COUNT(*) FROM ipdata WHERE exsfile = :file AND hospcode = :hoscode',
+                [':file' => 'legacy-ip.xlsx', ':hoscode' => '00065']
+            )
+                ->queryScalar()
+        );
+    }
+
     public function testProvincialAdminCannotCreateOrUpdateRetiredUploadType(): void
     {
         $this->app->set('facilityAccess', new RetiredUploadFacilityAccess());

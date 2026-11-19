@@ -174,7 +174,11 @@ class XlsfileuploadsController extends BaseController
     public function actionDelete($id)
     {
         $model = $this->findModel($id, true);
-        if ($model->typefileupload === 'fwfdata' || $model->typefileupload === 'fwfhealth') {
+        $type = strtolower(trim((string)$model->typefileupload));
+        if ($type === 'op') {
+            $type = 'op pp'; // ชนิดเดิมของข้อมูลเก่า
+        }
+        if ($type === 'fwfdata' || $type === 'fwfhealth') {
             Yii::$app->facilityAccess->requirePermission('manageFwfData');
         }
 
@@ -189,12 +193,12 @@ class XlsfileuploadsController extends BaseController
                 ? Yii::$app->facilityAccess->provincialFacilityCodes()
                 : Yii::$app->facilityAccess->visibleFacilityCodes(true);
             $criteria = ['exsfile' => $fileName];
-            if ($model->typefileupload === 'ip' || $model->typefileupload === 'op pp') {
+            if ($type === 'ip' || $type === 'op pp') {
                 $criteria['hospcode'] = $codes;
-            } elseif ($model->typefileupload === 'fwfdata') {
+            } elseif ($type === 'fwfdata') {
                 Yii::$app->facilityAccess->requirePermission('manageFwfData');
                 $criteria['FundHolderID'] = $codes;
-            } elseif (!in_array($model->typefileupload, ['insurance', 'fwfhealth'], true)) {
+            } elseif (!in_array($type, ['insurance', 'fwfhealth'], true)) {
                 throw new \yii\web\ForbiddenHttpException('ไม่มีสิทธิ์ลบข้อมูลนำเข้าประเภทนี้');
             }
 
@@ -202,7 +206,7 @@ class XlsfileuploadsController extends BaseController
                 'ip' => 'ipdata',
                 'op pp' => 'opdata',
                 'fwfdata' => 'fwfdatabase',
-            ][$model->typefileupload] ?? null;
+            ][$type] ?? null;
             if ($table !== null) {
                 Yii::$app->db->createCommand()->delete($table, $criteria)->execute();
             }
