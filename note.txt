@@ -174,7 +174,8 @@ F048827653015
 เขียนฝั่งหน้าบ้าน (Frontend) ใหม่ด้วย Framework ยอดนิยมในยุคนี้ เช่น Next.js (React) หรือ Nuxt (Vue)
 วิธีแก้เรื่อง Kartik Grid/Export: ในฝั่ง Frontend สมัยใหม่มี Library จัดการตารางและ Export ที่ทรงพลังกว่า Kartik มาก เช่น TanStack Table (React Table) หรือ DataTables ซึ่งสามารถดึงข้อมูล JSON จาก Yii2 API มาแสดงผล ทำ Filter, Sort และ Export ฝั่ง Client ได้อย่างรวดเร็วโดยไม่เปลืองแรงเซิร์ฟเวอร์
 
-
+แก้ข้อมูลขายบัตรเข้าไม่ครบ
+ปรับเงื่อนไขนำเข้าข้อมูล ตาราง insurance_policies ตรวจความซ้ำซ้อนจาก f_code กับ effective_date เงื่อนไขการนำเข้าข้อมูลตาราง fwfdatabase ตรวจความซ้ำช้อนจาก fcode ใน cid กับ PeriodStartDate
 
 ค่ารักษาผู้ป่วยนอกส่งต่อต่างจังหวัด
 อนุม้ติจ่าย

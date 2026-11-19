@@ -218,8 +218,8 @@ class InsurancepoliciesController extends BaseController
             'man_sp' => $sum('man_sp'),
         ])->from('fwfdatabase')
             ->where(['FundHolderID' => array_column($hospitals, 'hospcode')])
-            ->andWhere(['>=', 'PeriodStartDate', $start->format('Y-m-d')])
-            ->andWhere(['<=', 'PeriodStartDate', $end->format('Y-m-d')])
+            ->andWhere(['>=', 'regisdate', $start->format('Y-m-d')])
+            ->andWhere(['<=', 'regisdate', $end->format('Y-m-d')])
             ->groupBy(['FundHolderID', 'card_price'])->all();
 
         $priceToCard = [];
