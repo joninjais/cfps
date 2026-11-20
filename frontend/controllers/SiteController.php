@@ -2019,12 +2019,16 @@ ORDER BY q.cupcode, q.hospcode
     public function actionLogin()
     {
         Yii::$app->response->headers->set('Cache-Control', 'no-store, private');
+
         $session = Yii::$app->session;
 
         // Already logged in via custom session
         if (!empty($session['user'])) {
             $check = User::findIdentity($session->get('userid'));
             if ($check && (string)$check->user === (string)$session['user']) {
+                $session->removeFlash('error');
+                $session->removeFlash('danger');
+                $session->removeFlash('warning');
                 return $this->goHome();
             }
             // stale session — destroy it
@@ -2033,7 +2037,6 @@ ORDER BY q.cupcode, q.hospcode
 
         $model = new LoginForm();
         $post = Yii::$app->request->post('LoginForm');
-
         $username = trim($post['username'] ?? '');
         $password = $post['password'] ?? '';
 
@@ -2041,6 +2044,7 @@ ORDER BY q.cupcode, q.hospcode
             // Brute-force: 5 failed attempts in 5 minutes = lockout
             $cacheKey = 'login_fail:' . Yii::$app->request->userIP;
             $fails    = Yii::$app->cache->get($cacheKey) ?: 0;
+
             if ($fails >= 5) {
                 Yii::$app->session->setFlash('error', 'พยายามเข้าสู่ระบบผิดเกินกำหนด กรุณารอ 5 นาทีแล้วลองใหม่');
                 return $this->render('login', ['model' => $model]);
@@ -2072,10 +2076,12 @@ ORDER BY q.cupcode, q.hospcode
                 // Open and regenerate session to prevent session fixation
                 $session->open();
                 $session->regenerateID(true);
+
                 if (!Yii::$app->user->login($loginuser, 0)) {
                     Yii::error('ไม่สามารถสร้างสถานะการเข้าสู่ระบบสำหรับ userid=' . $loginuser->userid, __METHOD__);
                     throw new \yii\web\ForbiddenHttpException('ไม่สามารถเข้าสู่ระบบได้ กรุณาลองอีกครั้ง');
                 }
+
                 try {
                     Yii::$app->facilityAccess->requireAnyRole(['provincialAdmin', 'userManager', 'hospitalStaff', 'pcuStaff']);
                     Yii::$app->facilityAccess->requirePermission('accessApplication');
@@ -2085,6 +2091,7 @@ ORDER BY q.cupcode, q.hospcode
                     Yii::$app->session->setFlash('error', 'บัญชีนี้ยังไม่ได้รับการกำหนดสิทธิ์ กรุณาติดต่อผู้ดูแลระบบ');
                     return $this->render('login', ['model' => $model]);
                 }
+
                 $session['user']       = $loginuser->user;
                 $session['fname']      = $loginuser->fname;
                 $session['lname']      = $loginuser->lname;
@@ -2093,7 +2100,7 @@ ORDER BY q.cupcode, q.hospcode
                     ->select('hosname')
                     ->from('chospital2')
                     ->where(['hospcode' => $loginuser->hoscode])
-                    ->scalar();                    
+                    ->scalar();
                 $session['orgname']    = $hosname;
                 $session['fullname']   = trim(($loginuser->fname ?? '') . ' ' . ($loginuser->lname ?? '')) ?: (string)$hosname;
                 $session['hoscode']    = $loginuser->hoscode;
@@ -2102,6 +2109,11 @@ ORDER BY q.cupcode, q.hospcode
 
                 // Record successful login in history
                 LoginHistory::record($loginuser->user, $loginuser->hoscode, 'success');
+
+                // ล้างข้อความแจ้งเตือนสิทธิ์ที่ค้างมาจากก่อนเข้าสู่ระบบ
+                $session->removeFlash('error');
+                $session->removeFlash('danger');
+                $session->removeFlash('warning');
 
                 // Force password change if flagged
                 if ($loginuser->must_change_password) {
@@ -2114,6 +2126,7 @@ ORDER BY q.cupcode, q.hospcode
             // Increment fail counter (5 min TTL) & record failure
             Yii::$app->cache->set($cacheKey, $fails + 1, 300);
             LoginHistory::record($username, null, 'failed', 'invalid_credentials');
+
             Yii::$app->session->setFlash('error', 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
         }
 
