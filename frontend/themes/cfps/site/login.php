@@ -62,11 +62,16 @@ $this->registerJsFile('@web/js/cfps-login.js?v=' . $jsVer, ['position' => \yii\w
                     <?= $this->render('@frontend/views/site/_registration-link') ?>
                 </div>
             <?php endif; ?>
-
+            <div class="cfps-login-public-check">
+                <a href="<?= Url::to(['/card-search/index']) ?>" class="btn btn-block cfps-btn-public-search">
+                    <i class="fa fa-id-card"></i> ค้นหาบัตรประกันสุขภาพคนต่างด้าว
+                </a>
+            </div> 
             <div class="cfps-login-footer">
                 <?= Html::a('<i class="fa fa-book"></i> คู่มือการใช้งาน', ['@web/manual.html'], ['target' => '_blank', 'rel' => 'noopener']) ?>
                 <?= Html::a('<i class="fa fa-shield"></i> นโยบาย PDPA', ['@web/pdpa.html'], ['target' => '_blank', 'rel' => 'noopener']) ?>
             </div>
+           
         </div>
     </div>
 </div>

@@ -28,3 +28,14 @@
         });
     });
 })(jQuery);
+
+/* ย้าย Bootstrap Modal ทุกตัวไปเป็นลูกตรงของ <body> อัตโนมัติ เพื่อไม่ให้ติด Stacking Context ของ .content-wrapper หรือ .table-responsive */
+(function ($) {
+    if (!$) return;
+    $(document).on('show.bs.modal', '.modal', function () {
+        var $modal = $(this);
+        if (!$modal.parent().is('body')) {
+            $modal.appendTo('body');
+        }
+    });
+})(window.jQuery);

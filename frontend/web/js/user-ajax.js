@@ -405,3 +405,17 @@
         });
     });
 })(jQuery);
+/* ย้าย Bootstrap Modal ออกไปต่อท้าย <body> อัตโนมัติ พร้อมล้างตัวเก่าที่มี ID ซ้ำจากการโหลด AJAX */
+(function ($) {
+    if (!$) return;
+    $(document).on('show.bs.modal', '.modal', function () {
+        var $modal = $(this);
+        var modalId = $modal.attr('id');
+        if (modalId) {
+            $('body > .modal#' + $.escapeSelector(modalId)).not($modal).remove();
+        }
+        if (!$modal.parent().is('body')) {
+            $modal.appendTo('body');
+        }
+    });
+})(window.jQuery);

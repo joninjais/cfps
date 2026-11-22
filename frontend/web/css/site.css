@@ -286,3 +286,94 @@ a.desc:after {
         padding: 14px;
     }
 }
+/* =========================================================
+   Global Modal Fix: อยู่เหนือ Top Menu 2 ชั้นทุกหน้า 100%
+   ========================================================= */
+
+/* 1. ให้ฉากหลังสีดำทึบคลุมทับแถบเมนูบนทั้ง 2 ชั้นด้วย (อยู่เหนือทุกเมนู) */
+.modal-backdrop {
+    z-index: 99998 !important;
+}
+
+/* 2. ให้ตัว Modal ลอยอยู่ชั้นบนสุดเสมอ และเว้นระยะพ้น Top Menu 2 ชั้น (125px) */
+.modal {
+    z-index: 99999 !important;
+    padding-top: 125px !important;
+    padding-bottom: 32px !important;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+}
+
+/* 3. จัดกรอบ Modal ให้อยู่กึ่งกลางและไม่ดันซ้ำซ้อน */
+.modal-dialog {
+    margin: 0 auto 32px auto !important;
+    max-width: 560px;
+    width: calc(100% - 32px);
+}
+
+/* รองรับกรณีหน้าที่ใช้ modal-lg หรือ modal-xl ให้ขยายได้ตามปกติ */
+.modal-dialog.modal-lg {
+    max-width: 860px !important;
+}
+.modal-dialog.modal-xl {
+    max-width: 1140px !important;
+}
+
+/* 4. จัดระเบียบส่วนหัวสีน้ำเงินของ Modal (แก้ปุ่ม × ทับตัวหนังสือ "รีเซ็ตรหัสผ่าน: wanrudee") */
+.modal-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 14px 20px !important;
+    border-top-left-radius: 12px !important;
+    border-top-right-radius: 12px !important;
+}
+
+.modal-header .modal-title,
+.modal-header h4,
+.modal-header h5 {
+    margin: 0 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    order: 1;
+}
+
+.modal-header .close,
+.modal-header .btn-close {
+    order: 2;
+    margin: 0 0 0 auto !important;
+    padding: 0 4px !important;
+    float: none !important;
+    opacity: 0.9 !important;
+}
+
+/* 5. ขอบมนและเงาของกล่อง Modal */
+.modal-content {
+    border: none !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.28) !important;
+}
+
+/* 6. แก้ฟอร์มเดี่ยวใน Modal ไม่ให้บีบครึ่งซ้าย */
+.modal-body .row {
+    margin-left: 0;
+    margin-right: 0;
+}
+.modal-body .row > [class*="col-"]:only-child {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    float: none !important;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* 7. ให้ DatePicker / Select2 ที่เปิดซ้อนใน Modal ลอยอยู่เหนือ Modal อีกชั้น */
+.datepicker,
+.daterangepicker,
+.select2-container--open {
+    z-index: 100005 !important;
+}
+

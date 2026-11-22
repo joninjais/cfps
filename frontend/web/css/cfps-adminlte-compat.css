@@ -399,3 +399,46 @@ section.content-header > .breadcrumb,
     text-align: right !important;
     float: none !important;
 }
+/* ==========================================================================
+   Global Modal Layering Fix: ป้องกัน .main-header และ .cfps-topmenu ทับ Modal
+   ========================================================================== */
+
+/* คุมเพดาน z-index ของ Header และ Sticky Top Menu ให้อยู่ระดับ 1020-1030 */
+.main-header {
+    z-index: 1030 !important;
+}
+
+.cfps-topmenu,
+.cfps-topmenu-nav,
+.cfps-mobile-bar {
+    z-index: 1025 !important;
+}
+
+.cfps-topmenu .dropdown-menu {
+    z-index: 1035 !important;
+}
+
+/* ยกฉากหลังมืด (.modal-backdrop) และตัวกล่อง (.modal) ให้ลอยเหนือ Header/Topmenu ทั้งหมด */
+.modal-backdrop {
+    z-index: 2040 !important;
+}
+
+.modal {
+    z-index: 2050 !important;
+}
+
+/* กรณีมี Datepicker / Select2 / Tooltip เปิดซ้อนอยู่บน Modal อีกชั้น */
+.select2-container--open,
+.datepicker-dropdown,
+.ui-datepicker,
+.tooltip,
+.popover {
+    z-index: 2060 !important;
+}
+
+/* เมื่อ Modal เปิดอยู่ ให้ลดลำดับชั้น Header/Topmenu ลงชั่วคราวกันเหนียวกรณี Stacking Context ซ้อน */
+body.modal-open .main-header,
+body.modal-open .cfps-topmenu,
+body.modal-open .cfps-mobile-bar {
+    z-index: 900 !important;
+}

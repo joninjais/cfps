@@ -24,6 +24,7 @@ $menus = [
         'label' => 'ตรวจสอบสิทธิ',
         'icon'  => 'fa-check-circle',
         'items' => [
+            ['label' => 'ค้นหาบัตรประกันสุขภาพ พังงา', 'desc' => 'ค้นหาบัตรประกันสุขภาพ', 'icon' => 'fa-id-card', 'url' => Url::to(['/card-search/index'])],
             ['label' => 'ตรวจสอบสิทธิกองทุนประกันสุขภาพคนต่างด้าว', 'desc' => 'ระบบตรวจสอบสิทธิ FWF', 'icon' => 'fa-external-link', 'url' => 'https://fwf.moph.go.th/PublicCIDCheck', 'external' => true],
             ['label' => 'ตรวจสอบสิทธิผ่านระบบ FDH', 'desc' => 'ระบบกระทรวงสาธารณสุข', 'icon' => 'fa-external-link', 'url' => 'https://fdh.moph.go.th/fwf/eligibility-check', 'external' => true],
         ],
@@ -32,7 +33,7 @@ $menus = [
         'label' => 'รายงานและตรวจสอบข้อมูล',
         'icon'  => 'fa-bar-chart',
         'items' => array_merge(
-            [
+            [                
                 ['label' => 'Dashboard', 'desc' => 'ภาพรวมข้อมูลและผลการดำเนินงาน', 'icon' => 'fa-tachometer', 'url' => Url::to(['/site/dashboard'])],
                 ['label' => 'ตรวจสอบข้อมูล Fwfdatabase', 'desc' => 'ค้นหาข้อมูลในฐาน FWF', 'icon' => 'fa-database', 'url' => Url::to(['/fwfdatabase/index'])],
             ],
