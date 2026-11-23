@@ -57,14 +57,6 @@
         z-index: 1110;
     }
 
-    /* บนหน้าจอแนวนอนความสูงน้อย (เช่น iPhone 16 แนวนอน 852x393) บีบให้บางเพียง 38px */
-    @media screen and (max-height: 500px) {
-        .cfps-mobile-header-bar {
-            min-height: 38px;
-            padding: 3px 10px;
-        }
-    }
-
     .cfps-mobile-brand {
         display: inline-flex;
         align-items: center;
@@ -132,7 +124,7 @@
         background: rgba(0, 0, 0, 0.22);
     }
 
-    /* 2.2 ซ่อน .main-header และ .cfps-topmenu 100% เป็นค่าเริ่มต้น */
+    /* 2.2 ซ่อน .main-header เฉพาะโหมดมือถือ (<=1024px หรือ สูง <=540px) */
     body.cfps-collapsible-ready .main-header {
         display: none !important;
     }
@@ -167,7 +159,6 @@
         display: block !important;
     }
 
-    /* บนจอแนวนอน (>=600px) จัดเรียงปุ่มผู้ใช้เป็น 3 คอลัมน์ ใช้พื้นที่แค่ 2 แถวสั้นๆ */
     body.cfps-collapsible-ready .main-header .navbar-nav {
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -176,15 +167,6 @@
         padding: 0 !important;
         width: 100% !important;
         float: none !important;
-    }
-
-    @media screen and (max-width: 599px) {
-        body.cfps-collapsible-ready .main-header .navbar-nav {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        body.cfps-collapsible-ready .main-header .navbar-nav > li:first-child {
-            grid-column: 1 / -1;
-        }
     }
 
     body.cfps-collapsible-ready .main-header .navbar-nav > li {
@@ -209,18 +191,27 @@
         text-overflow: ellipsis;
     }
 
-    /* 2.3 พับซ่อน .cfps-topmenu เป็นค่าเริ่มต้น และจัดเป็น Grid เมื่อกดกาง */
+    /* 2.3 พับซ่อน .cfps-topmenu เฉพาะโหมดมือถือ และจัดเป็น Grid เมื่อกดกาง */
     body.cfps-collapsible-ready .cfps-topmenu {
         display: none !important;
     }
 
     body.cfps-collapsible-ready .cfps-topmenu.is-mobile-expanded {
         display: block !important;
+        position: relative;
+        z-index: 1115;
         background: #ffffff;
         border-bottom: 2px solid #2e7d48;
         box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
         max-height: calc(100vh - 44px);
         overflow-y: auto;
+    }
+
+    /* ปิดแผ่นใส .dropdown-backdrop ของ Bootstrap 3 ที่บังลิงก์ย่อยบนจอสัมผัส */
+    .cfps-topmenu .dropdown-backdrop,
+    body.cfps-collapsible-ready .dropdown-backdrop {
+        display: none !important;
+        pointer-events: none !important;
     }
 
     body.cfps-collapsible-ready .cfps-topmenu .cfps-topmenu__inner {
@@ -231,14 +222,9 @@
         padding: 8px 10px 10px !important;
     }
 
-    @media screen and (max-width: 599px) {
-        body.cfps-collapsible-ready .cfps-topmenu .cfps-topmenu__inner {
-            grid-template-columns: minmax(0, 1fr);
-        }
-    }
-
     body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-group {
         width: 100%;
+        position: relative;
     }
 
     body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-toggle {
@@ -251,16 +237,33 @@
     }
 
     body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-menu {
-        position: static !important;
+        position: relative !important;
+        z-index: 1120 !important;
         float: none !important;
         width: 100% !important;
         max-width: 100% !important;
         box-shadow: none !important;
         border: 1px solid #d5e5d9;
         margin: 4px 0;
+        pointer-events: auto !important;
     }
 
-    /* 2.4 โหมดซ่อนหัวเว็บเต็มรูปแบบ (ทั้งตอนกดปุ่ม [▲] และตอนเลื่อนลงในแนวนอน) */
+    body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-group:focus-within > .cfps-nav-menu,
+    body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-group.open > .cfps-nav-menu,
+    body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-group.is-open > .cfps-nav-menu {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    body.cfps-collapsible-ready .cfps-topmenu .cfps-nav-menu a[href] {
+        position: relative;
+        z-index: 1125;
+        pointer-events: auto !important;
+        touch-action: manipulation;
+    }
+
+    /* 2.4 โหมดซ่อนหัวเว็บเต็มรูปแบบ */
     body.cfps-header-minimized .cfps-sticky-top,
     body.cfps-header-minimized .cfps-mobile-header-bar,
     body.cfps-header-minimized .main-header,
@@ -437,7 +440,30 @@
     }
 }
 
-@media (max-width: 767px) {
+/* ย่อยเพิ่มเติมสำหรับหน้าจอแนวนอนความสูงน้อยมาก (<= 500px) */
+@media screen and (max-height: 500px) {
+    .cfps-mobile-header-bar {
+        min-height: 38px;
+        padding: 3px 10px;
+    }
+}
+
+/* ย่อยเพิ่มเติมสำหรับหน้าจอมือถือแนวตั้งแคบ (<= 599px) */
+@media screen and (max-width: 599px) {
+    body.cfps-collapsible-ready .main-header .navbar-nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body.cfps-collapsible-ready .main-header .navbar-nav > li:first-child {
+        grid-column: 1 / -1;
+    }
+
+    body.cfps-collapsible-ready .cfps-topmenu .cfps-topmenu__inner {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media screen and (max-width: 767px) {
     section.content-header > .breadcrumb {
         font-size: 0.82rem !important;
         text-align: right !important;

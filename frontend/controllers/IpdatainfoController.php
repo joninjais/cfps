@@ -216,7 +216,7 @@ class IpdatainfoController extends BaseController
         foreach ($allFwf as $fwfRow) {
             foreach (array_map('trim', explode(',', $fwfRow['CID'])) as $c) {
                 if ($c !== '') {
-                    $fwfMap[$c][] = [
+                    $fwfMap[mb_strtoupper($c)][] = [
                         'FundHolderID'    => $fwfRow['FundHolderID'],
                         'PeriodStartDate' => $fwfRow['PeriodStartDate'],
                         'PeriodEndDate'   => $fwfRow['PeriodEndDate'],
@@ -483,7 +483,7 @@ class IpdatainfoController extends BaseController
 
     private function resolveFundHolderId($cid, $admitdate, $adjrw, array $fwfMap)
     {
-        $cid = trim((string)$cid);
+        $cid = mb_strtoupper(trim((string)$cid));
         $admitdate = trim((string)$admitdate);
         $adjrw = (float)$adjrw;
 

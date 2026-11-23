@@ -124,6 +124,24 @@
             }
         });
 
+        // ล้าง .dropdown-backdrop ของ Bootstrap 3 ทันทีที่กดกางหมวดหมู่ในโหมดมือถือ
+        $topmenu.on('shown.bs.dropdown click', '.cfps-nav-group, .cfps-nav-toggle', function () {
+            $('.dropdown-backdrop').remove();
+        });
+
+        // ให้ลิงก์ย่อยใน .cfps-nav-menu เปลี่ยนหน้าได้ทันทีบนมือถือโดยไม่ถูกตัวดักเมนูแม่กั้น
+        $topmenu.on('click', '.cfps-nav-menu a[href]', function (e) {
+            var href = $.trim($(this).attr('href') || '');
+            if (!href || href === '#' || href.toLowerCase().indexOf('javascript:') === 0) {
+                return;
+            }
+            if ($(this).is('[data-method], [data-confirm], [data-toggle]')) {
+                return;
+            }
+            e.stopPropagation();
+            closeAllPanels();
+        });
+
         // ปุ่มซ่อนหัวเว็บด้วยตนเอง [▲]
         $compactBar.on('click', '.js-minimize-header', function (e) {
             e.stopPropagation();

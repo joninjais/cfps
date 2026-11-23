@@ -395,7 +395,7 @@ class OpdatainfoController extends BaseController
         foreach ($allFwf as $fwfRow) {
             foreach (array_map('trim', explode(',', $fwfRow['CID'])) as $c) {
                 if ($c !== '') {
-                    $fwfMap[$c][] = [
+                    $fwfMap[mb_strtoupper($c)][] = [
                         'FundHolderID'    => $fwfRow['FundHolderID'],
                         'PeriodStartDate' => $fwfRow['PeriodStartDate'],
                         'PeriodEndDate'   => $fwfRow['PeriodEndDate'],
@@ -469,9 +469,10 @@ class OpdatainfoController extends BaseController
 
             // --- หา FundHolderID จาก fwfMap แทนการ query ---
             $hosb = 'ccccc';
-            if (!empty($cid) && isset($fwfMap[$cid])) {
+            $cidKey = mb_strtoupper(trim((string)$cid));
+            if ($cidKey !== '' && isset($fwfMap[$cidKey])) {
                 $matched = [];
-                foreach ($fwfMap[$cid] as $fwfRow) {
+                foreach ($fwfMap[$cidKey] as $fwfRow) {
                     if ($dateserv >= $fwfRow['PeriodStartDate'] && $dateserv <= $fwfRow['PeriodEndDate']) {
                         $matched[] = $fwfRow;
                     }
@@ -484,7 +485,7 @@ class OpdatainfoController extends BaseController
                     // ใช้ period ที่หมดอายุล่าสุดเป็น fallback
                     $latestRow = null;
                     $latestEnd = '';
-                    foreach ($fwfMap[$cid] as $fwfRow) {
+                    foreach ($fwfMap[$cidKey] as $fwfRow) {
                         if ($fwfRow['PeriodEndDate'] > $latestEnd) {
                             $latestEnd = $fwfRow['PeriodEndDate'];
                             $latestRow = $fwfRow;

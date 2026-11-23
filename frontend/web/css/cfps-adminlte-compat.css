@@ -442,3 +442,99 @@ body.modal-open .cfps-topmenu,
 body.modal-open .cfps-mobile-bar {
     z-index: 900 !important;
 }
+/* ==========================================================================
+   Global Modal & Mobile Topmenu Click Fix
+   ========================================================================== */
+
+/* 1) ยกฉากมืดและตัวกล่อง Modal ให้สูงกว่าทั้ง Desktop และ Mobile Header/Topmenu
+      โดยไม่ไปกดทับค่า z-index ปกติของ .cfps-topmenu ในโหมดมือถือ */
+.modal-backdrop {
+    z-index: 10040 !important;
+}
+
+.modal {
+    z-index: 10050 !important;
+}
+
+.select2-container--open,
+.datepicker-dropdown,
+.ui-datepicker,
+.tooltip,
+.popover {
+    z-index: 10060 !important;
+}
+
+/* ลดลำดับชั้นของ Header/Topmenu เฉพาะตอนที่เปิด Modal อยู่เท่านั้น */
+body.modal-open .main-header,
+body.modal-open .cfps-topmenu,
+body.modal-open .cfps-mobile-bar {
+    z-index: 900 !important;
+}
+
+/* 2) โหมดมือถือ: ให้ .cfps-topmenu ลอยอยู่เหนือ Backdrop เสมอ และปลดล็อกการกดลิงก์ */
+@media (max-width: 991px), (max-height: 540px) {
+    body:not(.modal-open) .cfps-topmenu {
+        z-index: 1060 !important;
+    }
+
+    /* สืบทอด pointer-events จากตัวแม่: เมื่อเมนูเปิดอยู่จะกดลิงก์ย่อยได้ทันที แม้ CSS จอคอมตั้ง none ไว้รอ :hover */
+    .cfps-topmenu ul,
+    .cfps-topmenu li,
+    .cfps-topmenu .dropdown-menu,
+    .cfps-topmenu [class*="sub"],
+    .cfps-topmenu [class*="dropdown"],
+    .cfps-topmenu a {
+        pointer-events: inherit !important;
+    }
+
+    .cfps-topmenu a[href] {
+        position: relative;
+        z-index: 2;
+        touch-action: manipulation;
+    }
+}
+/* ==========================================================================
+   Global Modal & Mobile Topmenu Fix
+   ========================================================================== */
+
+.modal-backdrop {
+    z-index: 10040 !important;
+}
+
+.modal {
+    z-index: 10050 !important;
+}
+
+.select2-container--open,
+.datepicker-dropdown,
+.ui-datepicker,
+.tooltip,
+.popover {
+    z-index: 10060 !important;
+}
+
+body.modal-open .main-header,
+body.modal-open .cfps-topmenu,
+body.modal-open .cfps-mobile-bar {
+    z-index: 900 !important;
+}
+
+/* โหมดมือถือ: ปลดล็อก pointer-events ให้รายการเมนูที่กำลังกางเปิดอยู่กดได้จริง */
+@media (max-width: 991px), (max-height: 540px) {
+    body:not(.modal-open) .cfps-topmenu {
+        z-index: 1060 !important;
+    }
+
+    .cfps-topmenu.open,
+    .cfps-topmenu.is-open,
+    .cfps-topmenu.active,
+    .cfps-topmenu.show,
+    body[class*="menu-open"] .cfps-topmenu,
+    .cfps-topmenu .open > .dropdown-menu,
+    .cfps-topmenu .is-open > .dropdown-menu,
+    .cfps-topmenu [class*="open"] a[href],
+    .cfps-topmenu [class*="active"] a[href],
+    .cfps-topmenu > ul > li > a[href] {
+        pointer-events: auto !important;
+    }
+}
