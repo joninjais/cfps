@@ -297,6 +297,13 @@ class OpdatainfoController extends BaseController
     }
 
 
+    private function releaseImportLocks(array $lockNames)
+    {
+        foreach ($lockNames as $lockName) {
+            Yii::$app->db->createCommand('SELECT RELEASE_LOCK(:n)', [':n' => $lockName])->queryScalar();
+        }
+    }
+
     public function actionImport($id)
     {
         set_time_limit(0); // ไฟล์ใหญ่อาจใช้เวลานาน
@@ -350,9 +357,10 @@ class OpdatainfoController extends BaseController
         $lastIdx   = -1;
         $hospcodes = [];
         foreach ($sheetData as $i => $row) {
-            if (!empty($row[0])) {
+            $hc = trim((string)$row[0]);
+            if ($hc !== '') {
                 $lastIdx = $i;
-                $hospcodes[$row[0]] = true;
+                $hospcodes[$hc] = true;
             }
         }
         if ($lastIdx < 0) {
@@ -405,20 +413,34 @@ class OpdatainfoController extends BaseController
         }
         unset($allFwf);
 
+        // --- ล็อกต่อ hospcode กันการนำเข้าพร้อมกันจนข้อมูลซ้ำ ---
+        $hcList = array_map('strval', array_keys($hospcodes));
+        sort($hcList);
+        $lockNames = [];
+        foreach ($hcList as $hc) {
+            $lockName = 'opdata_import_' . $hc;
+            if (!(int)Yii::$app->db->createCommand('SELECT GET_LOCK(:n, 30)', [':n' => $lockName])->queryScalar()) {
+                $this->releaseImportLocks($lockNames);
+                Yii::$app->session->addFlash('error', 'มีการนำเข้าข้อมูลของหน่วยบริการ ' . $hc . ' อยู่ กรุณาลองใหม่ภายหลัง');
+                return $this->redirect(['opdatainfo/index']);
+            }
+            $lockNames[] = $lockName;
+        }
+
         // --- Pre-load opdata เฉพาะ hospcode ที่มีในไฟล์ Excel ---
-        $hcList    = array_keys($hospcodes);
         $rawOpdata = (new \yii\db\Query())
             ->select(['seq', 'hospcode', 'FundHolderID'])
             ->from('opdata')
             ->where(['hospcode' => $hcList])
             ->all();
 
-        $existingSet = []; // "hospcode|seq|FundHolderID" => true
+        $existingSet = []; // "hospcode|seq" => true
         $cccccSet    = []; // "hospcode|seq" => true  (เฉพาะ FundHolderID='ccccc')
         foreach ($rawOpdata as $r) {
-            $existingSet[$r['hospcode'] . '|' . $r['seq'] . '|' . $r['FundHolderID']] = true;
+            $key = trim((string)$r['hospcode']) . '|' . trim((string)$r['seq']);
+            $existingSet[$key] = true;
             if ($r['FundHolderID'] === 'ccccc') {
-                $cccccSet[$r['hospcode'] . '|' . $r['seq']] = true;
+                $cccccSet[$key] = true;
             }
         }
         unset($rawOpdata);
@@ -429,11 +451,12 @@ class OpdatainfoController extends BaseController
 
         for ($i = 0; $i <= $lastIdx; $i++) {
             $row = $sheetData[$i];
-            if (empty($row[0])) continue;
+            $hospcode = trim((string)$row[0]);
+            if ($hospcode === '') continue;
 
-            $hospcode = $row[0];
             // แถวที่ถูกข้ามอยู่แล้ว (seq ว่าง) ไม่ต้องตรวจวันที่
-            if (empty($row[6])) continue;
+            $seq = trim((string)$row[6]);
+            if ($seq === '') continue;
 
             $dateserv = $this->parseExcelDate($row[1]);
             if ($dateserv === null) {
@@ -444,7 +467,6 @@ class OpdatainfoController extends BaseController
             $fund     = $row[3];
             $cid      = $row[4];
             $hn       = $row[5];
-            $seq      = $row[6];
             $icd10    = str_replace('.', '', (string)$row[7]);
             $ms_raw   = array_slice($row, 8, 16); // m1..m16 (index 0..15)
             // ลบ , ออกจากแต่ละค่าใน $ms_raw แล้ว cast เป็น float สำหรับ PHP 8
@@ -464,8 +486,6 @@ class OpdatainfoController extends BaseController
             $p_age           = (is_numeric($p_age) && $p_age >= 0 && $p_age <= 65535) ? (int)$p_age : null;
             // Excel อาจอ่านรหัสเป็นตัวเลข (48) จึงเติม 0 ข้างหน้าให้ครบ 3 หลัก
             $nation          = $this->normalizeNation($row[$colNation] ?? '');
-
-            if (empty($seq) || empty($hospcode)) continue;
 
             // --- หา FundHolderID จาก fwfMap แทนการ query ---
             $hosb = 'ccccc';
@@ -497,16 +517,13 @@ class OpdatainfoController extends BaseController
                 }
             }
 
-            // เก็บคู่ที่ต้องลบ (FundHolderID='ccccc' เดิม)
-            $cccccKey = $hospcode . '|' . $seq;
-            if (isset($cccccSet[$cccccKey])) {
+            // คีย์กันซ้ำคือ (hospcode, seq) ไม่ดู FundHolderID
+            // ถ้าของเดิมเป็น 'ccccc' ให้ลบแล้วแทนที่ด้วยแถวใหม่ ไม่เช่นนั้นข้าม
+            $existKey = $hospcode . '|' . $seq;
+            if (isset($cccccSet[$existKey])) {
                 $deletePairs[] = ['seq' => $seq, 'hospcode' => $hospcode];
-                unset($cccccSet[$cccccKey]);
-                unset($existingSet[$cccccKey . '|ccccc']);
+                unset($cccccSet[$existKey], $existingSet[$existKey]);
             }
-
-            // ข้ามถ้ามีข้อมูลอยู่แล้ว
-            $existKey = $hospcode . '|' . $seq . '|' . $hosb;
             if (isset($existingSet[$existKey])) continue;
 
             $insertRows[] = [
@@ -520,6 +537,7 @@ class OpdatainfoController extends BaseController
         }
 
         if (!empty($badDate)) {
+            $this->releaseImportLocks($lockNames);
             Yii::$app->session->addFlash('error',
                 'ไม่นำเข้าข้อมูล: พบวันที่รับบริการที่ว่างหรือไม่ถูกต้องจำนวน ' . count($badDate)
                 . ' แถว แถวที่: ' . implode(', ', array_slice($badDate, 0, 20))
@@ -570,6 +588,7 @@ class OpdatainfoController extends BaseController
             $transaction->rollBack();
             Yii::$app->session->addFlash('error', 'นำเข้าข้อมูลไม่สำเร็จ: ' . $e->getMessage());
         }
+        $this->releaseImportLocks($lockNames);
 
         // บันทึกสถานะและอัปเดต op_pp_type เฉพาะเมื่อนำเข้าสำเร็จ
         if ($imported) {

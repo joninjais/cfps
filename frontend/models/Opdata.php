@@ -57,7 +57,9 @@ class Opdata extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
+            [['hospcode', 'seq'], 'trim'],
             [['hospcode', 'dateserv', 'name', 'cid','hn','seq'], 'required'],
+            [['seq'], 'unique', 'targetAttribute' => ['hospcode', 'seq'], 'message' => 'มี hospcode และ seq นี้อยู่แล้ว'],
             [['dateserv'], 'safe'],
             [['hospcode'], 'string', 'max' => 5],
             [['name', 'fund', 'icd10','exsfile'], 'string', 'max' => 255],
