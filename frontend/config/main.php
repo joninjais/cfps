@@ -21,7 +21,7 @@ return [
             'class' => 'frontend\components\FacilityAccess',
         ],
         'request' => [
-            'csrfParam' => '_csrf-frontend',
+            'csrfParam' => '_csrf-frontend2',
             'csrfCookie' => ['httpOnly' => true, 'secure' => $isHttps],
             'parsers' => [
                 'application/json' => 'yii\web\JsonParser',
